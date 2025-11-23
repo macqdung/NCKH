@@ -1,0 +1,63 @@
+version: "3.1"
+rules:
+- rule: ask for genre when missing and user asks for recommendation
+  condition:
+  - slot: genre
+    type: not_set
+  steps:
+  - intent: book_query
+  - action: utter_ask_genre
+- rule: ask for mood when missing and user asks for recommendation
+  condition:
+  - slot: mood
+    type: not_set
+  steps:
+  - intent: book_query
+  - action: utter_ask_mood
+- rule: ask for level when missing and user asks for recommendation
+  condition:
+  - slot: level
+    type: not_set
+  steps:
+  - intent: book_query
+  - action: utter_ask_level
+- rule: smalltalk smalltalk_weather
+  steps:
+  - intent: smalltalk_weather
+  - action: utter_smalltalk_weather
+- rule: smalltalk smalltalk_feeling
+  steps:
+  - intent: smalltalk_feeling
+  - action: utter_smalltalk_feeling
+- rule: smalltalk smalltalk_daily_life
+  steps:
+  - intent: smalltalk_daily_life
+  - action: utter_smalltalk_daily_life
+- rule: smalltalk smalltalk_food
+  steps:
+  - intent: smalltalk_food
+  - action: utter_smalltalk_food
+- rule: smalltalk smalltalk_funny
+  steps:
+  - intent: smalltalk_funny
+  - action: utter_smalltalk_funny
+- rule: smalltalk smalltalk_school
+  steps:
+  - intent: smalltalk_school
+  - action: utter_smalltalk_school
+- rule: smalltalk smalltalk_work
+  steps:
+  - intent: smalltalk_work
+  - action: utter_smalltalk_work
+- rule: smalltalk smalltalk_relationship
+  steps:
+  - intent: smalltalk_relationship
+  - action: utter_smalltalk_relationship
+- rule: smalltalk smalltalk_stress
+  steps:
+  - intent: smalltalk_stress
+  - action: utter_smalltalk_stress
+- rule: smalltalk smalltalk_random
+  steps:
+  - intent: smalltalk_random
+  - action: utter_smalltalk_random

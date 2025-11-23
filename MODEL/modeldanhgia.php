@@ -1,43 +1,70 @@
 <?php
-include_once 'connect.php';
+if (file_exists(__DIR__ . '/connect.php')) {
+    include_once(__DIR__ . '/connect.php');
+}
 
 class data_danhgia
 {
-    public function addReview($username, $comment, $rating)
-    {
-        global $conn;
-        $stmt = $conn->prepare("INSERT INTO danhgia (user, comment, rating) VALUES (?, ?, ?)");
-        $stmt->bind_param("ssi", $username, $comment, $rating);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
-    }
-
+    /**
+     * Lấy tất cả các bài đánh giá.
+     */
     public function getReviews()
     {
         global $conn;
-        $stmt = $conn->prepare("SELECT user, comment, rating, created_at FROM danhgia ORDER BY created_at DESC");
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $reviews = [];
-        while ($row = $result->fetch_assoc()) {
-            $reviews[] = $row;
+        $data = [];
+        // Join with products to get product details
+        $stmt = $conn->prepare("
+            SELECT
+                d.user, d.comment, d.rating, d.created_at,
+                p.tensanpham, p.hinhanh, p.ID_sanpham
+            FROM danhgia d
+            JOIN products p ON d.product_id = p.ID_sanpham
+            ORDER BY d.created_at DESC
+        ");
+        if ($stmt) {
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $data[] = $row;
+            }
+            $stmt->close();
         }
-        $stmt->close();
-        return $reviews;
+        return $data;
     }
 
-    // Lấy đánh giá theo sản phẩm và user
+    /**
+     * Thêm một bài đánh giá mới.
+     */
+    public function addReview($user, $comment, $rating, $order_id, $product_id)
+    {
+        global $conn;
+        // Sử dụng tên bảng là 'danhgia'
+        $stmt = $conn->prepare("INSERT INTO danhgia (user, comment, rating, order_id, product_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+        if ($stmt) {
+            $stmt->bind_param("ssiii", $user, $comment, $rating, $order_id, $product_id);
+            $result = $stmt->execute();
+            $stmt->close();
+            return $result;
+        }
+        return false;
+    }
+
+    /**
+     * Lấy đánh giá theo sản phẩm và người dùng.
+     */
     public function getReviewByProductAndUser($product_id, $username)
     {
         global $conn;
-        $stmt = $conn->prepare("SELECT comment, rating, created_at FROM danhgia WHERE ID_sanpham = ? AND user = ? ORDER BY created_at DESC LIMIT 1");
-        $stmt->bind_param("is", $product_id, $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $review = $result->fetch_assoc();
-        $stmt->close();
-        return $review;
+        // Sử dụng tên bảng là 'danhgia'
+        $stmt = $conn->prepare("SELECT * FROM danhgia WHERE product_id = ? AND user = ? ORDER BY created_at DESC LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param("is", $product_id, $username);
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            return $result;
+        }
+        return null;
     }
 }
 ?>

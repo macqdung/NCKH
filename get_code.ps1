@@ -1,0 +1,1 @@
+Get-ChildItem -Recurse -Filter *.php | Where-Object { $_.FullName -notlike '*PHPMailer*' } | ForEach-Object { "--- Start of $($_.FullName) ---"; Get-Content $_.FullName; "--- End of $($_.FullName) ---" } | Out-File -FilePath all_code.txt -Encoding UTF8

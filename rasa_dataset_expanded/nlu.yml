@@ -1,0 +1,113 @@
+version: "3.1"
+nlu:
+- intent: greet
+  examples: |
+    - chào
+    - xin chào
+    - hello
+    - hi
+    - good morning
+    - good evening
+    - hey
+- intent: goodbye
+  examples: |
+    - tạm biệt
+    - bye
+    - hẹn gặp lại
+    - see you
+    - chào tạm biệt
+- intent: thanks
+  examples: |
+    - cảm ơn
+    - thanks
+    - thank you
+    - cảm ơn bạn
+- intent: ask_genre
+  examples: |
+    - Bạn thích thể loại nào?
+    - Gợi ý thể loại cho tôi
+    - Tôi muốn đọc thể loại gì
+    - Bạn có thể giới thiệu thể loại không?
+- intent: provide_genre
+  examples: |
+    - Tôi thích [manga](genre)
+    - [light novel](genre)
+    - Tôi thích [kinh dị](genre)
+    - [trinh thám](genre)
+    - Tôi thích [giả tưởng](genre)
+    - [tiểu thuyết](genre)
+    - Tôi thích [lãng mạn](genre)
+    - [khoa học viễn tưởng](genre)
+    - Tôi thích [phiêu lưu](genre)
+    - [hồi hộp](genre)
+    - Tôi thích [IT](genre)
+    - [Finance](genre)
+    - Tôi thích [Life skills](genre)
+    - [Psychology](genre)
+    - Tôi thích [Romance](genre)
+    - [Science Fiction](genre)
+- intent: ask_mood
+  examples: |
+    - Tôi muốn sách theo tâm trạng
+    - Bạn có sách hợp tâm trạng không?
+    - Gợi ý theo tâm trạng cho tôi
+    - Tôi đang buồn, nên đọc gì?
+- intent: provide_mood
+  examples: |
+    - Tôi đang [vui](mood)
+    - [buồn](mood)
+    - Tôi đang [thư giãn](mood)
+    - [hào hứng](mood)
+    - Tôi đang [căng thẳng](mood)
+    - [tò mò](mood)
+    - Tôi đang [lãng đãng](mood)
+    - [nghiêm túc](mood)
+    - [happy](mood)
+    - [sad](mood)
+    - [neutral](mood)
+- intent: ask_level
+  examples: |
+    - Tôi mới bắt đầu đọc sách
+    - Tôi là người mới
+    - Tôi đã đọc khá nhiều rồi
+    - Tôi muốn sách cho người mới bắt đầu
+- intent: provide_level
+  examples: |
+    - Tôi là [mới bắt đầu](level)
+    - [trung cấp](level)
+    - Tôi là [nâng cao](level)
+    - [kinh nghiệm](level)
+    - [beginner](level)
+    - [intermediate](level)
+    - [advanced](level)
+- intent: book_query
+  examples: |
+    - Bạn có thể gợi ý vài cuốn sách?
+    - Hãy đề xuất 3 cuốn sách cho tôi
+    - Tôi cần đề xuất sách
+    - Gợi ý sách theo sở thích của tôi
+- intent: smalltalk_weather
+  examples: |
+    - Hôm nay trời đẹp nhỉ
+    - Trời mưa quá
+    - Ngày hôm nay thật tuyệt
+- intent: smalltalk_feeling
+  examples: |
+    - Tôi buồn
+    - Tôi vui
+    - Tôi mệt
+    - Tôi căng thẳng
+- intent: smalltalk_daily_life
+  examples: |
+    - Tôi vừa đi làm về
+    - Hôm nay công việc quá nhiều
+    - Tôi đang muốn thư giãn
+- intent: smalltalk_food
+  examples: |
+    - Bạn thích ăn gì?
+    - Gợi ý món ăn
+    - Ăn gì ngon?
+- intent: smalltalk_funny
+  examples: |
+    - Kể chuyện vui đi
+    - Hãy kể một câu chuyện hài hước

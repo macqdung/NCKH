@@ -46,7 +46,7 @@ $statuses = ['chờ xác nhận', 'đang vận chuyển', 'đã giao hàng thàn
             <td><?= htmlspecialchars($o['tendangnhap'] ?? '') ?></td>
             <td><?= htmlspecialchars($o['tensanpham'] ?? '') ?></td>
             <td><?= $o['soluong'] ?></td>
-            <td><?= number_format($o['tongtien'], 0, ',', '.') ?> VND</td>
+            <td><?= number_format($o['tongtien'], 0, ',', '.') ?> 円</td>
             <td>
                 <form method="post" style="display:inline;">
                     <input type="hidden" name="order_id" value="<?= $o['ID'] ?>">

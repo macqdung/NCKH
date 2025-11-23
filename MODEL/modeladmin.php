@@ -3,7 +3,7 @@ include_once('connect.php');
 class data_admin
 {
     // Thêm sản phẩm mới
-    public function insert_product($tensanpham, $mota, $hinhanh, $soluong, $dongia, $category)
+    public function insert_product($tensanpham, $mota, $hinhanh, $soluong, $dongia, $category, $subcategory_id = null)
     {
         global $conn;
         // Check if product already exists
@@ -12,8 +12,13 @@ class data_admin
         if (mysqli_num_rows($check_run) > 0) {
             return false; // Duplicate
         }
-        $sql = "INSERT INTO products (tensanpham, mota, hinhanh, soluong, dongia, category)
-                VALUES ('$tensanpham', '$mota', '$hinhanh', '$soluong', '$dongia', '$category')";
+        if ($subcategory_id === null) {
+            $sql = "INSERT INTO products (tensanpham, mota, hinhanh, soluong, dongia, category)
+                    VALUES ('$tensanpham', '$mota', '$hinhanh', '$soluong', '$dongia', '$category')";
+        } else {
+            $sql = "INSERT INTO products (tensanpham, mota, hinhanh, soluong, dongia, category, subcategory_id)
+                    VALUES ('$tensanpham', '$mota', '$hinhanh', '$soluong', '$dongia', '$category', $subcategory_id)";
+        }
         $run = mysqli_query($conn, $sql);
         return $run;
     }
@@ -34,16 +39,18 @@ class data_admin
         return $run;
     }
 
-    public function get_all_products()
+    public function get_all_books()
     {
         global $conn;
-        $sql = "SELECT * FROM products";
+        $sql = "SELECT p.*, c.name as category_name
+                FROM products p
+                LEFT JOIN categories c ON p.category = c.id";
         $result = mysqli_query($conn, $sql);
-        $products = [];
+        $books = [];
         while ($row = mysqli_fetch_assoc($result)) {
-            $products[] = $row;
+            $books[] = $row;
         }
-        return $products;
+        return $books;
     }
 
     // Cập nhật số lượng sản phẩm
@@ -55,12 +62,124 @@ class data_admin
         return $run;
     }
 
-    // Voucher CRUD
-    public function insert_voucher($code, $type, $value, $min_order, $max_uses, $expiry_date, $applicable_to, $product_ids)
+    // Category and Subcategory Management
+    public function add_category($name)
     {
         global $conn;
-        $stmt = $conn->prepare("INSERT INTO vouchers (code, type, value, min_order, max_uses, expiry_date, applicable_to, product_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssddiiss", $code, $type, $value, $min_order, $max_uses, $expiry_date, $applicable_to, $product_ids);
+        $stmt = $conn->prepare("INSERT INTO categories (name) VALUES (?)");
+        $stmt->bind_param("s", $name);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    public function get_all_categories()
+    {
+        global $conn;
+        $sql = "SELECT * FROM categories ORDER BY name ASC";
+        $result = mysqli_query($conn, $sql);
+        $categories = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $categories[] = $row;
+        }
+        return $categories;
+    }
+
+    public function add_subcategory($name, $parent_id)
+    {
+        global $conn;
+        $stmt = $conn->prepare("INSERT INTO subcategories (name, parent_id) VALUES (?, ?)");
+        $stmt->bind_param("si", $name, $parent_id);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    public function get_subcategories_by_category($category_id)
+    {
+        global $conn;
+        $stmt = $conn->prepare("SELECT * FROM subcategories WHERE parent_id = ? ORDER BY name ASC");
+        $stmt->bind_param("i", $category_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $subcategories = [];
+        while ($row = $result->fetch_assoc()) {
+            $subcategories[] = $row;
+        }
+        $stmt->close();
+        return $subcategories;
+    }
+
+    public function update_subcategory($id, $name)
+    {
+        global $conn;
+        $stmt = $conn->prepare("UPDATE subcategories SET name = ? WHERE id = ?");
+        $stmt->bind_param("si", $name, $id);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    public function delete_subcategory($id)
+    {
+        global $conn;
+        // First, set subcategory_id to NULL for products using this subcategory
+        $update_stmt = $conn->prepare("UPDATE products SET subcategory_id = NULL WHERE subcategory_id = ?");
+        $update_stmt->bind_param("i", $id);
+        $update_stmt->execute();
+        $update_stmt->close();
+
+        // Now delete the subcategory
+        $stmt = $conn->prepare("DELETE FROM subcategories WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    // Book Management (updated for book attributes)
+    public function insert_book($title, $author, $publisher, $isbn, $description, $cover_image, $quantity, $price, $category_id, $subcategory_id)
+    {
+        global $conn;
+        // Check if book already exists by ISBN
+        $check_sql = "SELECT ID_sanpham FROM products WHERE isbn = '$isbn'";
+        $check_run = mysqli_query($conn, $check_sql);
+        if (mysqli_num_rows($check_run) > 0) {
+            return false; // Duplicate ISBN
+        }
+        $stmt = $conn->prepare("INSERT INTO products (tensanpham, author, publisher, isbn, mota, hinhanh, soluong, dongia, category, subcategory_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssidii", $title, $author, $publisher, $isbn, $description, $cover_image, $quantity, $price, $category_id, $subcategory_id);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    public function update_book($id, $title, $author, $publisher, $isbn, $price, $stock, $description, $main_category_id, $subcategory_id)
+    {
+        global $conn;
+        $stmt = $conn->prepare("UPDATE products SET tensanpham=?, author=?, publisher=?, isbn=?, dongia=?, soluong=?, mota=?, category=?, subcategory_id=? WHERE ID_sanpham=?");
+        $stmt->bind_param("ssssdissi", $title, $author, $publisher, $isbn, $price, $stock, $description, $main_category_id, $subcategory_id, $id);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    public function delete_book($id)
+    {
+        global $conn;
+        $stmt = $conn->prepare("DELETE FROM products WHERE ID_sanpham=?");
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    // Voucher CRUD
+    public function insert_voucher($code, $type, $value, $min_order, $max_uses_total, $expiry_date, $applicable_to, $product_ids)
+    {
+        global $conn;
+        $stmt = $conn->prepare("INSERT INTO vouchers (code, type, value, min_order, max_uses_total, expiry_date, applicable_to, product_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssddiiss", $code, $type, $value, $min_order, $max_uses_total, $expiry_date, $applicable_to, $product_ids);
         $result = $stmt->execute();
         $stmt->close();
         return $result;
@@ -90,11 +209,11 @@ class data_admin
         return $voucher;
     }
 
-    public function update_voucher($id, $code, $type, $value, $min_order, $max_uses, $expiry_date, $applicable_to, $product_ids)
+    public function update_voucher($id, $code, $type, $value, $min_order, $max_uses_total, $expiry_date, $applicable_to, $product_ids)
     {
         global $conn;
-        $stmt = $conn->prepare("UPDATE vouchers SET code=?, type=?, value=?, min_order=?, max_uses=?, expiry_date=?, applicable_to=?, product_ids=? WHERE id=?");
-        $stmt->bind_param("ssddiisssi", $code, $type, $value, $min_order, $max_uses, $expiry_date, $applicable_to, $product_ids, $id);
+        $stmt = $conn->prepare("UPDATE vouchers SET code=?, type=?, value=?, min_order=?, max_uses_total=?, expiry_date=?, applicable_to=?, product_ids=? WHERE id=?");
+        $stmt->bind_param("ssddiisssi", $code, $type, $value, $min_order, $max_uses_total, $expiry_date, $applicable_to, $product_ids, $id);
         $result = $stmt->execute();
         $stmt->close();
         return $result;
@@ -113,6 +232,25 @@ class data_admin
     public function validate_voucher($code, $user_id, $order_total, $product_id = null)
     {
         global $conn;
+        $stmt = $conn->prepare("SELECT * FROM vouchers WHERE code=? AND (expiry_date IS NULL OR expiry_date >= CURDATE()) AND (max_uses IS NULL OR uses_count < max_uses)");
+        $stmt->bind_param("s", $code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            if ($order_total < $row['min_order']) {
+                return ['valid' => false, 'message' => 'Order total does not meet minimum requirement.'];
+            }
+            if ($row['applicable_to'] == 'product' && $product_id) {
+                $product_ids = json_decode($row['product_ids'], true);
+                if (!in_array($product_id, $product_ids)) {
+                    return ['valid' => false, 'message' => 'Voucher not applicable to this product.'];
+                }
+            }
+            return ['valid' => true, 'voucher' => $row];
+        }
+        $stmt->close();
+        return ['valid' => false, 'message' => 'Invalid or expired voucher.'];
+    
         $stmt = $conn->prepare("SELECT * FROM vouchers WHERE code=? AND (expiry_date IS NULL OR expiry_date >= CURDATE()) AND (max_uses IS NULL OR uses_count < max_uses)");
         $stmt->bind_param("s", $code);
         $stmt->execute();
@@ -219,11 +357,34 @@ class data_admin
         return $result;
     }
 
+    public function update_loyalty_rules($points_per_purchase, $points_per_vnd, $redemption_rate, $min_points_redemption)
+    {
+        global $conn;
+        $stmt = $conn->prepare("UPDATE loyalty_rules SET points_per_purchase=?, points_per_vnd=?, redemption_rate=?, min_points_redemption=? WHERE id=1");
+        $stmt->bind_param("dddd", $points_per_purchase, $points_per_vnd, $redemption_rate, $min_points_redemption);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    public function update_user_loyalty_points($user_id, $points)
+    {
+        global $conn;
+        // First, get current points
+        $current_points = $this->get_user_points($user_id);
+        $difference = $points - $current_points;
+        if ($difference != 0) {
+            $transaction_type = $difference > 0 ? 'admin_adjustment' : 'admin_deduction';
+            return $this->adjust_user_points($user_id, $difference, $transaction_type, 'Admin adjustment');
+        }
+        return true; // No change needed
+    }
+
     // User Points Management
     public function adjust_user_points($user_id, $points, $transaction_type, $description)
     {
         global $conn;
-        $stmt = $conn->prepare("INSERT INTO user_points (ID_user, points, type, reference_id, created_at) VALUES (?, ?, ?, NULL, NOW())");
+        $stmt = $conn->prepare("INSERT INTO user_points (user_id, points, type, reference_id, created_at) VALUES (?, ?, ?, NULL, NOW())");
         $stmt->bind_param("iis", $user_id, $points, $transaction_type);
         $result = $stmt->execute();
         $stmt->close();
@@ -233,7 +394,7 @@ class data_admin
     public function get_user_points($user_id)
     {
         global $conn;
-        $stmt = $conn->prepare("SELECT SUM(points) as total_points FROM user_points WHERE ID_user=?");
+        $stmt = $conn->prepare("SELECT SUM(points) as total_points FROM user_points WHERE user_id=?");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -245,7 +406,7 @@ class data_admin
     public function get_user_points_history($user_id)
     {
         global $conn;
-        $stmt = $conn->prepare("SELECT * FROM user_points WHERE ID_user=? ORDER BY created_at DESC");
+        $stmt = $conn->prepare("SELECT * FROM user_points WHERE user_id=? ORDER BY created_at DESC");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -255,6 +416,22 @@ class data_admin
         }
         $stmt->close();
         return $history;
+    }
+
+    public function get_all_user_loyalty_points()
+    {
+        global $conn;
+        $sql = "SELECT u.ID_user, u.tendangnhap, COALESCE(SUM(up.points), 0) as loyalty_points
+                FROM users u
+                LEFT JOIN user_points up ON u.ID_user = up.user_id
+                GROUP BY u.ID_user, u.tendangnhap
+                ORDER BY u.ID_user ASC";
+        $result = mysqli_query($conn, $sql);
+        $users = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $users[] = $row;
+        }
+        return $users;
     }
 
     // Report methods
@@ -402,7 +579,7 @@ class data_admin
     public function get_available_vouchers($user_id)
     {
         global $conn;
-        $stmt = $conn->prepare("SELECT * FROM vouchers WHERE (expiry_date IS NULL OR expiry_date >= CURDATE()) AND (max_uses = 0 OR max_uses IS NULL OR uses_count < max_uses) AND id NOT IN (SELECT voucher_id FROM user_vouchers WHERE user_id = ?) ORDER BY created_at DESC");
+        $stmt = $conn->prepare("SELECT * FROM vouchers WHERE (expiry_date IS NULL OR expiry_date >= CURDATE()) AND (max_uses_total = 0 OR max_uses_total IS NULL OR uses_count < max_uses_total) AND id NOT IN (SELECT voucher_id FROM user_vouchers WHERE user_id = ?) ORDER BY created_at DESC");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -438,7 +615,7 @@ class data_admin
             }
         }
         // Check max uses
-        if (!empty($row['max_uses']) && $row['max_uses'] > 0 && $row['uses_count'] >= $row['max_uses']) {
+        if (!empty($row['max_uses_total']) && $row['max_uses_total'] > 0 && $row['uses_count'] >= $row['max_uses_total']) {
             return ['valid' => false, 'message' => 'Voucher đã hết lượt sử dụng.'];
         }
         // Check min order
@@ -455,8 +632,8 @@ class data_admin
         return ['valid' => true, 'voucher' => $row];
     }
     // Quản lý nhân viên
-    // Thêm nhân viên đúng cấu trúc bảng users (không có hoten, có sdt)
-    public function add_staff($username, $password, $sdt, $role = 'nhanvien')
+    // Thêm nhân viên đúng cấu trúc bảng users (có hoten, có sdt)
+    public function add_staff($username, $password, $hoten, $sdt, $role = 'nhanvien')
     {
         global $conn;
         // Check duplicate username
@@ -469,8 +646,8 @@ class data_admin
         }
         $stmt->close();
         $hashed = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("INSERT INTO users (tendangnhap, matkhau, sdt, role) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $username, $hashed, $sdt, $role);
+        $stmt = $conn->prepare("INSERT INTO users (tendangnhap, matkhau, hoten, sdt, role) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssss", $username, $hashed, $hoten, $sdt, $role);
         $result = $stmt->execute();
         $stmt->close();
         return $result;
@@ -510,7 +687,7 @@ class data_admin
     public function get_all_staff()
     {
         global $conn;
-        $result = mysqli_query($conn, "SELECT ID_user, tendangnhap, hoten, role FROM users ORDER BY ID_user ASC");
+        $result = mysqli_query($conn, "SELECT ID_user, tendangnhap, role FROM users ORDER BY ID_user ASC");
         $staffs = [];
         while ($row = mysqli_fetch_assoc($result)) {
             $staffs[] = $row;

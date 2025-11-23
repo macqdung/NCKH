@@ -1,0 +1,33 @@
+Chatbot Enhancement Thorough Testing Plan
+
+1. PowerShell Conversation Script Testing
+   - Run python_chatbot/test_chatbot_conversation.ps1
+   - Verify probing questions and multi-turn conversation flow
+   - Check for proper UTF-8 handling and responses correctness
+
+2. PHP Controller (controlchatbot.php) Testing
+   - Test POST forwarding to chatbot backend
+   - Verify response forwarding and error handling
+   - Simulate requests from frontend and check backend integration
+
+3. Frontend Chat UI Testing (VIEW/chat.php)
+   - Test chat UI usability and input handling
+   - Confirm display of chatbot probing questions and recommendations
+   - Check session persistence and multi-turn interactions
+
+4. API Endpoint Edge Cases
+   - Test /chatbot endpoint with missing or malformed JSON
+   - Test with unexpected input types and special characters
+   - Confirm proper error responses and no crashes
+
+5. Performance and Stability
+   - Simulate multiple concurrent chat sessions
+   - Monitor response times and server resource usage
+   - Check logs for errors or exceptions
+
+Deliverables:
+- Documented test results for each phase
+- Bug reports for any defects found
+- Suggestions for improvements if needed
+
+Ready to assist with execution, automation scripts, or manual testing support upon your confirmation.

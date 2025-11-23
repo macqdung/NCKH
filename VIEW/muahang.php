@@ -5,6 +5,7 @@ include('../MODEL/modelgiohang.php');
 include('../MODEL/modelmqd1.php');
 include('../MODEL/modeldangnhap.php');
 include_once(__DIR__ . '/../MODEL/modeladmin.php');
+include('../CONTROLLER/controlreview.php');
 $data = new data_muahang();
 $data_cart = new data_mqd1();
 $userModel = new data_user_login();
@@ -24,27 +25,27 @@ $show_message_id = null;
                 $stock = $product[0]['soluong'];
                 if ($quantity <= $stock) {
                     GioHang::addItem($id_sanpham, $quantity);
-                    $message = "Thêm vào giỏ hàng thành công";
+                    $message = "カートに追加されました";
                 } else {
-                    $message = "Số lượng yêu cầu vượt quá tồn kho (còn $stock)";
+                    $message = "要求数量が在庫を超えています (残り $stock)";
                 }
             } else {
-                $message = "Sản phẩm không tồn tại";
+                $message = "製品が存在しません";
             }
         } else {
-            $message = "Số lượng phải lớn hơn 0";
+            $message = "数量は0より大きくなければなりません";
         }
         $show_message_id = $id_sanpham;
     }
 
     if (isset($_POST['datmua'])) {
         if (!isset($_SESSION['user'])) {
-            $message = 'Vui lòng đăng nhập để đặt mua.';
+            $message = '注文するにはログインしてください。';
             $show_message_id = intval($_POST['id_sanpham']);
         } else {
             $user = $userModel->get_user_by_username($_SESSION['user']);
             if (!$user) {
-                $message = 'Lỗi xác thực người dùng.';
+                $message = 'ユーザー認証エラー。';
                 $show_message_id = intval($_POST['id_sanpham']);
             } else {
                 $id_user = $user['ID_user'];
@@ -57,17 +58,17 @@ $show_message_id = null;
                 $voucher_id = isset($_POST['voucher_id']) ? intval($_POST['voucher_id']) : null;
 
                 if ($soluong <= 0) {
-                    $message = 'Số lượng mua phải lớn hơn 0';
+                    $message = '購入数量は0より大きくなければなりません';
                 } else {
                     $insert = $data->insert_muahang($id_user, $id_sanpham, $solanmua, $soluong, $dongia, $tongtien, $trangthai, null, $voucher_id);
                     if (is_array($insert) && $insert['success']) {
-                        $discount_msg = $insert['discount'] > 0 ? " (Giảm giá: " . number_format($insert['discount'], 0, ',', '.') . " VND)" : "";
-                        header('Location: lichsumuahang.php?message=Đã đặt hàng thành công và đang chờ xác nhận!' . $discount_msg);
+                        $discount_msg = $insert['discount'] > 0 ? " (割引: " . number_format($insert['discount'], 0, ',', '.') . " 円)" : "";
+                        header('Location: lichsumuahang.php?message=注文が成功し、確認待ちです！' . $discount_msg);
                         exit();
                     } elseif (is_array($insert) && !$insert['success']) {
-                        $message = $insert['message'];
+                    $message = $insert['message'];
                     } else {
-                        $message = 'Thất bại hoặc số lượng mua vượt quá tồn kho';
+                        $message = '失敗または購入数量が在庫を超えています';
                     }
                 }
                 $show_message_id = $id_sanpham;
@@ -76,11 +77,11 @@ $show_message_id = null;
     }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mua hàng</title>
+    <title>購入</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="luoi.css">
@@ -92,11 +93,11 @@ $show_message_id = null;
         <div class="container-fluid d-flex align-items-center justify-content-between">
           <a class="navbar-brand d-flex align-items-center" href="#">
           <img src="../media/loo.jpg" alt="Logo" width="30" height="24" class="d-inline-block align-text-top me-2">
-            Bakery Shop
+            Book Shop
           </a>
           <form class="d-flex" role="search" style="margin-left:auto;">
-            <input class="form-control me-2" type="search" placeholder="Tìm kiếm" aria-label="Search" style="width: 200px;">
-            <button class="btn btn-outline-success" type="submit">Tìm kiếm</button>
+            <input class="form-control me-2" type="search" placeholder="検索" aria-label="Search" style="width: 200px;">
+            <button class="btn btn-outline-success" type="submit">検索</button>
           </form>
           <a href="giohang.php" class="btn btn-outline-primary position-relative ms-3">
             <i class="fa fa-shopping-cart"></i>
@@ -112,7 +113,7 @@ $show_message_id = null;
 
     <?php if (isset($_SESSION['user'])): ?>
         <div class="text-center bg-light py-2">
-            <h5>Xin chào <?= htmlspecialchars($_SESSION['user']) ?>! <a href="dangxuat.php" class="btn btn-outline-secondary btn-sm">Đăng xuất</a></h5>
+            <h5>こんにちは <?= htmlspecialchars($_SESSION['user']) ?>! <a href="dangxuat.php" class="btn btn-outline-secondary btn-sm">ログアウト</a></h5>
         </div>
     <?php endif; ?>
 
@@ -122,21 +123,27 @@ $show_message_id = null;
         </div>
     <?php endif; ?>
 
+    <?php if (isset($_GET['error']) && !empty($_GET['error'])): ?>
+        <div class="alert alert-danger" role="alert">
+            <?= htmlspecialchars($_GET['error']) ?>
+        </div>
+    <?php endif; ?>
+
     <div class="menu">
         <ul>
-            <li><a href="mqd.php">Trang chủ</a></li>
-            <li><a href="mqd1.php">Sản phẩm</a></li>
+            <li><a href="mqd.php">ホーム</a></li>
+            <li><a href="mqd1.php">製品</a></li>
             <li>
-                <a href="#">Các loại bánh</a>
+                <a href="#">本の種類</a>
                 <ul>
-                    <li><a href="mqd3.php#banhkem">Bánh kem</a></li>
-                    <li><a href="mqd3.php#banhbonglan">Bánh bông lan</a></li>
-                    <li><a href="mqd1.php">Hiển thị tất cả</a></li>
+                    <li><a href="mqd3.php#banhkem">小説</a></li>
+                    <li><a href="mqd3.php#banhbonglan">教科書</a></li>
+                    <li><a href="mqd1.php">すべて表示</a></li>
                 </ul>
             </li>
-            <li><a href="https://tljus.com/">Shop bánh</a></li>
-            <li><a href="dangnhap.php">Đăng nhập</a></li>
-            <li><a href="danhgia.php">Đánh giá</a></li>
+            <li><a href="https://tljus.com/">Book Shop</a></li>
+            <li><a href="dangnhap.php">ログイン</a></li>
+            <li><a href="danhgia.php">レビュー</a></li>
         </ul>
     </div>
 
@@ -151,7 +158,7 @@ $show_message_id = null;
                 ?>
                 <div class="hang">
                     <div class="cot cot-12">
-                        <h2 class="text-center mb-4">Chi tiết sản phẩm</h2>
+                        <h2 class="text-center mb-4">製品詳細</h2>
                     </div>
                 </div>
                 <div class="hang">
@@ -160,23 +167,23 @@ $show_message_id = null;
                     </div>
                     <div class="cot cot-6 maytinhbang-cot-6 dienthoai-cot-12">
                         <h3><?= htmlspecialchars($se_sp['tensanpham']) ?></h3>
-                        <p><strong>Mô tả:</strong> <?= htmlspecialchars($se_sp['mota']) ?></p>
-                        <p><strong>Số lượng còn:</strong> <?= $se_sp['soluong'] ?></p>
-                        <p><strong>Đơn giá:</strong> <span id="original-price"><?= number_format($se_sp['dongia'], 0, ',', '.') ?></span> VND</p>
-                        <p id="discounted-price-display" style="display: none;"><strong>Giá sau giảm:</strong> <span id="discounted-dongia">0</span> VND</p>
+                        <p><strong>説明:</strong> <?= htmlspecialchars($se_sp['mota']) ?></p>
+                        <p><strong>在庫数:</strong> <?= $se_sp['soluong'] ?></p>
+                        <p><strong>単価:</strong> <span id="original-price"><?= number_format($se_sp['dongia'], 0, ',', '.') ?></span> 円</p>
+                        <p id="discounted-price-display" style="display: none;"><strong>割引後価格:</strong> <span id="discounted-dongia">0</span> 円</p>
                         <form method="post" action="muahang.php?mua=<?= $se_sp['ID_sanpham'] ?>" class="mt-3">
                             <input type="hidden" name="id_sanpham" value="<?= $se_sp['ID_sanpham'] ?>">
                             <input type="hidden" name="dongia" value="<?= $se_sp['dongia'] ?>">
                             <div class="mb-3">
-                                <label for="txtmua" class="form-label">Số lượng mua:</label>
+                                <label for="txtmua" class="form-label">購入数量:</label>
                                 <input type="number" id="txtmua" name="txtmua" class="form-control" min="1" max="<?= $se_sp['soluong'] ?>" value="1" required oninput="tinhTongTien(this, <?= $se_sp['dongia'] ?>)">
                             </div>
                             <div class="mb-3">
-                                <label for="tongtien" class="form-label">Tổng tiền:</label>
-                                <input type="text" id="tongtien" name="tongtien" class="form-control" value="<?= number_format($se_sp['dongia'], 0, ',', '.') ?>" placeholder="Tổng tiền" readonly>
+                                <label for="tongtien" class="form-label">合計金額:</label>
+                                <input type="text" id="tongtien" name="tongtien" class="form-control" value="<?= number_format($se_sp['dongia'], 0, ',', '.') ?>" placeholder="合計金額" readonly>
                             </div>
                             <?php
-                            // Luôn hiển thị ô chọn voucher và preview cho user đã đăng nhập
+                            // 常にログイン済みユーザーに対してクーポン選択とプレビューを表示する
                             if (isset($_SESSION['user'])):
                                 $user = $userModel->get_user_by_username($_SESSION['user']);
                                 $id_user = $user['ID_user'];
@@ -184,16 +191,16 @@ $show_message_id = null;
                                 $product_id = $se_sp['ID_sanpham'];
                             ?>
                                 <div class="mb-3">
-                                    <label for="voucher_select" class="form-label">Chọn Voucher (tùy chọn):</label>
+                                    <label for="voucher_select" class="form-label">クーポンを選択 (オプション):</label>
                                     <select id="voucher_select" name="voucher_id" class="form-control" onchange="applyVoucherDiscount()">
-                                        <option value="">Không sử dụng voucher</option>
+                                        <option value="">クーポンを使用しない</option>
                                         <?php foreach ($claimed_vouchers as $voucher): ?>
                                             <?php
                                             $option_text = $voucher['code'] . ' - ';
                                             if ($voucher['type'] == 'percent') {
                                                 $option_text .= $voucher['value'] . '% off';
                                             } else {
-                                                $option_text .= number_format($voucher['value'], 0, ',', '.') . ' VND off';
+                                                $option_text .= number_format($voucher['value'], 0, ',', '.') . ' 円 off';
                                             }
                                             $current_date = date('Y-m-d');
                                             $expiry_date = isset($voucher['expiry_date']) ? $voucher['expiry_date'] : '';
@@ -221,27 +228,27 @@ $show_message_id = null;
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
-                                    <small class="form-text text-muted">Chỉ hiển thị voucher đã claim và áp dụng được. Hệ thống sẽ kiểm tra tính hợp lệ khi đặt hàng.</small>
+                                    <small class="form-text text-muted">取得済みで適用可能なクーポンのみが表示されます。注文時にシステムが有効性を確認します。</small>
                                 </div>
                                 <div id="discount-preview" class="mb-3" style="display: none;">
-                                    <p><strong>Giá sau giảm:</strong> <span id="discounted-price">0</span> VND</p>
-                                    <p><strong>Tiết kiệm:</strong> <span id="savings">0</span> VND</p>
+                                    <p><strong>割引後価格:</strong> <span id="discounted-price">0</span> 円</p>
+                                    <p><strong>節約:</strong> <span id="savings">0</span> 円</p>
                                 </div>
                             <?php endif; ?>
                         <div class="d-flex gap-2">
                             <?php if (isset($_SESSION['user'])): ?>
-                                <button type="submit" name="datmua" class="btn btn-success">Đặt mua</button>
+                                <button type="submit" name="datmua" class="btn btn-success">注文する</button>
                             <?php else: ?>
-                                <button type="button" class="btn btn-success" onclick="alert('Vui lòng đăng nhập để mua hàng.'); window.location.href='dangnhap.php?redirect=muahang.php?mua=<?= $se_sp['ID_sanpham'] ?>';">Đặt mua</button>
+                                <button type="button" class="btn btn-success" onclick="alert('商品を購入するにはログインしてください。'); window.location.href='dangnhap.php?redirect=muahang.php?mua=<?= $se_sp['ID_sanpham'] ?>';">注文する</button>
                             <?php endif; ?>
-                            <button type="submit" name="addtocart" class="btn btn-primary">Thêm vào giỏ hàng</button>
+                            <button type="submit" name="addtocart" class="btn btn-primary">カートに追加</button>
                         </div>
                         <?php if ($show_message_id == $se_sp['ID_sanpham'] && $message): ?>
                             <div class="mt-3 alert alert-<?= $message == 'Thành công' ? 'success' : 'danger' ?>" role="alert">
                                 <?= $message ?>
                             </div>
                         <?php endif; ?>
-                        <p class="mt-3"><a href="mqd1.php" class="btn btn-primary">Quay lại danh sách sản phẩm</a></p>
+                        <p class="mt-3"><a href="mqd1.php" class="btn btn-primary">製品リストに戻る</a></p>
                     </div>
                 </div>
 
@@ -282,7 +289,7 @@ $show_message_id = null;
                     const minOrder = parseFloat(option.dataset.minOrder);
 
                     if (tongtienValue < minOrder) {
-                        alert('Tổng tiền không đủ điều kiện sử dụng voucher (tối thiểu ' + minOrder.toLocaleString('vi-VN') + ' VND)');
+                        alert('注文金額がクーポン使用条件を満たしていません (最低 ' + minOrder.toLocaleString('vi-VN') + ' 円)');
                         select.value = '';
                         return;
                     }
@@ -337,14 +344,14 @@ $show_message_id = null;
                 <?php else: ?>
                 <div class="hang">
                     <div class="cot cot-12">
-                        <p>Không tìm thấy sản phẩm.</p>
+                        <p>製品が見つかりません。</p>
                     </div>
                 </div>
                 <?php endif; ?>
             <?php else: ?>
                 <div class="hang">
                     <div class="cot cot-12">
-                        <p>Vui lòng chọn sản phẩm để mua.</p>
+                        <p>製品を選択してください。</p>
                     </div>
                 </div>
             <?php endif; ?>
@@ -357,7 +364,7 @@ $show_message_id = null;
                 <div class="container text-center text-md-start mt-5">
                     <div class="row mt-3">
                         <div class="col-md-3 col-lg-4 col-xl-3 mx-auto mb-4">
-                            <img src="../media/loo.jpg" alt="Bakery Logo" width="100">
+                            <img src="../media/loo.jpg" alt="ベーカリーロゴ" width="100">
                             <div class="d-flex mt-3">
                                 <a href="#" class="me-2"><img src="../media/fb.png" alt="Facebook" height="50" width="50"></a>
                                 <a href="#" class="me-2"><img src="../media/ytb.png" alt="YouTube" height="50" width="50"></a>
@@ -365,32 +372,32 @@ $show_message_id = null;
                             </div>
                         </div>
                         <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
-                            <h6 class="text-uppercase fw-bold mb-4">Về chúng tôi</h6>
-                            <p><a href="#!" class="text-reset">Giới thiệu</a></p>
-                            <p><a href="#!" class="text-reset">Sứ mệnh của nhân viên</a></p>
-                            <p><a href="#!" class="text-reset">Giá trị sản phẩm</a></p>
-                            <p><a href="#!" class="text-reset">An toàn thực phẩm</a></p>
+                            <h6 class="text-uppercase fw-bold mb-4">私たちについて</h6>
+                            <p><a href="#!" class="text-reset">紹介</a></p>
+                            <p><a href="#!" class="text-reset">従業員の使命</a></p>
+                            <p><a href="#!" class="text-reset">製品価値</a></p>
+                            <p><a href="#!" class="text-reset">食品安全性</a></p>
                         </div>
                         <div class="col-md-3 col-lg-2 col-xl-2 mx-auto mb-4">
-                            <h6 class="text-uppercase fw-bold mb-4">Vị trí cửa hàng</h6>
-                            <p><a href="#!" class="text-reset">Miền Bắc</a></p>
-                            <p><a href="#!" class="text-reset">Miền Trung</a></p>
-                            <p><a href="#!" class="text-reset">Miền Nam</a></p>
+                            <h6 class="text-uppercase fw-bold mb-4">店舗の場所</h6>
+                            <p><a href="#!" class="text-reset">北部</a></p>
+                            <p><a href="#!" class="text-reset">中部</a></p>
+                            <p><a href="#!" class="text-reset">南部</a></p>
                         </div>
                         <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mb-md-0 mb-4">
-                            <h6 class="text-uppercase fw-bold mb-4">Tải ứng dụng</h6>
+                            <h6 class="text-uppercase fw-bold mb-4">アプリをダウンロード</h6>
                             <a href="#"><img src="../media/ggpl.png" alt="Google Play" height="50"></a>
                         </div>
                     </div>
                 </div>
             </section>
             <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);">
-                Phiên bản 1.7.7
+                バージョン 1.7.7
                 <div class="mt-2">
-                    <a href="#!" class="text-reset me-3">Sự nghiệp</a>
-                    <a href="#!" class="text-reset me-3">Bakery Shop</a>
-                    <a href="#!" class="text-reset me-3">Quyền lợi của khách hàng</a>
-                    <span class="text-danger">Liên hệ chúng tôi 1900 1234</span>
+                    <a href="#!" class="text-reset me-3">キャリア</a>
+                    <a href="#!" class="text-reset me-3">ベーカリーショップ</a>
+                    <a href="#!" class="text-reset me-3">顧客の権利</a>
+                    <span class="text-danger">お問い合わせ 1900 1234</span>
                 </div>
             </div>
         </footer>

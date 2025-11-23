@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 include_once '../MODEL/modelquenmk.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -18,13 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Step 1: Send verification code to email
         $email = trim($_POST['email']);
         if (empty($email)) {
-            $errors[] = "Vui lòng nhập email.";
+            $errors[] = "メールアドレスを入力してください。";
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Email không hợp lệ.";
+            $errors[] = "メールアドレスが無効です。";
         } else {
             $user = $userModel->get_user_by_email($email);
             if (!$user) {
-                $errors[] = "Email không tồn tại trong hệ thống.";
+                $errors[] = "このメールアドレスは登録されていません。";
             } else {
                 // Generate 6-digit code
                 $code = random_int(100000, 999999);
@@ -43,18 +45,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail->SMTPSecure = 'tls';
                     $mail->Port = 587;
 
-                    $mail->setFrom('your_email@gmail.com', 'Bakery Shop');
+                    $mail->setFrom('your_email@gmail.com', '本屋さん');
                     $mail->addAddress($email);
 
                     $mail->isHTML(true);
-                    $mail->Subject = 'Mã xác thực lấy lại mật khẩu';
-                    $mail->Body = "Mã xác thực của bạn là: <b>$code</b>. Mã có hiệu lực trong 10 phút.";
+                    $mail->Subject = 'パスワードリセット確認コード';
+                    $mail->Body = "確認コード: <b>$code</b><br>このコードは10分間有効です。";
 
                     $mail->send();
-                    $success = "Mã xác thực đã được gửi đến email của bạn.";
+                    $success = "確認コードをメールアドレスに送信しました。";
                     $step = 2;
                 } catch (Exception $e) {
-                    $errors[] = "Gửi email thất bại: {$mail->ErrorInfo}";
+                    $errors[] = "メール送信に失敗しました: {$mail->ErrorInfo}";
                 }
             }
         }
@@ -66,20 +68,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nhaplaimatkhau = $_POST['nhaplaimatkhau'];
 
         if (empty($code) || empty($matkhaumoi) || empty($nhaplaimatkhau)) {
-            $errors[] = "Vui lòng điền đầy đủ thông tin.";
+            $errors[] = "すべての項目を入力してください。";
         } elseif ($matkhaumoi !== $nhaplaimatkhau) {
-            $errors[] = "Mật khẩu mới và nhập lại mật khẩu không khớp.";
+            $errors[] = "新しいパスワードと確認パスワードが一致しません。";
         } elseif ($code != ($_SESSION['reset_code'] ?? '') || (time() - ($_SESSION['code_time'] ?? 0)) > 600) {
-            $errors[] = "Mã xác thực không đúng hoặc đã hết hạn.";
+            $errors[] = "確認コードが無効または期限切れです。";
         } else {
             // Update password
             $updated = $userModel->update_password_by_email($email, $matkhaumoi);
             if ($updated) {
                 unset($_SESSION['reset_email'], $_SESSION['reset_code'], $_SESSION['code_time']);
-                $success = "Cập nhật mật khẩu thành công! Bạn có thể <a href='dangnhap.php'>đăng nhập</a> ngay bây giờ.";
+                $success = "パスワードが正常に更新されました！<a href='dangnhap.php'>ログイン</a>してください。";
                 $step = 1;
             } else {
-                $errors[] = "Cập nhật mật khẩu thất bại, vui lòng thử lại.";
+                $errors[] = "パスワード更新に失敗しました。再度お試しください。";
                 $step = 2;
             }
         }
@@ -87,70 +89,238 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="vi">
+<!doctype html>
+<html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lấy lại mật khẩu</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>パスワードリセット - 本屋さん</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="luoi.css">
+    <link rel="stylesheet" type="text/css" href="dinhdang.css">
+    <link rel="stylesheet" type="text/css" href="dinhdangmenu.css">
+    <style>
+        .auth-container {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;
+        }
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 450px;
+            width: 100%;
+        }
+        .auth-header {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .auth-header i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+        .auth-body {
+            padding: 40px 30px;
+        }
+        .form-floating {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #ffc107;
+            box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+        }
+        .btn-send-code, .btn-reset {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-send-code:hover, .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+        }
+        .auth-links {
+            text-align: center;
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        .auth-links a {
+            color: #ffc107;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .auth-links a:hover {
+            color: #e0a800;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 10px;
+            position: relative;
+        }
+        .step.active {
+            background: #ffc107;
+            color: white;
+        }
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: 30px;
+            height: 2px;
+            background: #e9ecef;
+            margin-left: 10px;
+        }
+        .step:last-child::after {
+            display: none;
+        }
+        .code-input {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        @media (max-width: 576px) {
+            .auth-container {
+                padding: 20px;
+            }
+            .auth-card {
+                margin: 0;
+            }
+            .auth-header, .auth-body {
+                padding: 30px 20px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <?php include('menu.php'); ?>
 
-<div class="container my-5">
-  <div class="row justify-content-center">
-    <div class="col-md-6">
-      <div class="card shadow">
-        <div class="card-header bg-warning text-dark text-center">
-          <h4>Lấy lại mật khẩu</h4>
-        </div>
-        <div class="card-body">
-          <?php if (!empty($errors)): ?>
-            <div class="alert alert-danger">
-              <ul>
-                <?php foreach ($errors as $error): ?>
-                  <li><?= htmlspecialchars($error) ?></li>
-                <?php endforeach; ?>
-              </ul>
-            </div>
-          <?php endif; ?>
-          <?php if ($success): ?>
-            <div class="alert alert-success"><?= $success ?></div>
-          <?php endif; ?>
+    <div class="noidung">
+        <div class="luoi chieurongluoi">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <i class="fas fa-key"></i>
+                        <h3 class="mb-2">パスワードリセット</h3>
+                        <p class="mb-0 opacity-75">安全にパスワードをリセットします</p>
+                    </div>
 
-          <?php if ($step === 1): ?>
-          <form method="post" action="">
-            <div class="mb-3">
-              <label for="email" class="form-label">Nhập email của bạn</label>
-              <input type="email" class="form-control" name="email" required value="<?= isset($email) ? htmlspecialchars($email) : '' ?>" />
+                    <div class="auth-body">
+                        <div class="step-indicator">
+                            <div class="step <?= $step >= 1 ? 'active' : '' ?> <?= $step > 1 ? 'completed' : '' ?>">1</div>
+                            <div class="step <?= $step >= 2 ? 'active' : '' ?>">2</div>
+                        </div>
+
+                        <?php if (!empty($errors)): ?>
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    <?php foreach ($errors as $error): ?>
+                                        <li><?= htmlspecialchars($error) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($success): ?>
+                            <div class="alert alert-success text-center">
+                                <?= $success ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($step === 1): ?>
+                            <form method="post" action="">
+                                <div class="form-floating">
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="メールアドレス" required value="<?= isset($email) ? htmlspecialchars($email) : '' ?>">
+                                    <label for="email">
+                                        <i class="fas fa-envelope me-2"></i>メールアドレス
+                                    </label>
+                                </div>
+                                <button type="submit" name="send_code" class="btn btn-send-code">
+                                    <i class="fas fa-paper-plane me-2"></i>確認コードを送信
+                                </button>
+                            </form>
+                        <?php elseif ($step === 2): ?>
+                            <form method="post" action="">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control code-input" id="code" name="code" maxlength="6" placeholder="000000" required>
+                                    <label for="code">
+                                        <i class="fas fa-hashtag me-2"></i>確認コード (6桁)
+                                    </label>
+                                </div>
+
+                                <div class="form-floating">
+                                    <input type="password" class="form-control" id="matkhaumoi" name="matkhaumoi" placeholder="新しいパスワード" required>
+                                    <label for="matkhaumoi">
+                                        <i class="fas fa-lock me-2"></i>新しいパスワード
+                                    </label>
+                                </div>
+
+                                <div class="form-floating">
+                                    <input type="password" class="form-control" id="nhaplaimatkhau" name="nhaplaimatkhau" placeholder="パスワード確認" required>
+                                    <label for="nhaplaimatkhau">
+                                        <i class="fas fa-lock me-2"></i>パスワード確認
+                                    </label>
+                                </div>
+
+                                <button type="submit" name="verify_code" class="btn btn-reset">
+                                    <i class="fas fa-check me-2"></i>確認 & パスワード更新
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="auth-links">
+                        <a href="dangnhap.php">
+                            <i class="fas fa-arrow-left me-1"></i>ログインに戻る
+                        </a>
+                    </div>
+                </div>
             </div>
-            <button type="submit" name="send_code" class="btn btn-warning w-100">Gửi mã xác thực</button>
-          </form>
-          <?php elseif ($step === 2): ?>
-          <form method="post" action="">
-            <div class="mb-3">
-              <label for="code" class="form-label">Nhập mã xác thực</label>
-              <input type="text" class="form-control" name="code" maxlength="6" required />
-            </div>
-            <div class="mb-3">
-              <label for="matkhaumoi" class="form-label">Mật khẩu mới</label>
-              <input type="password" class="form-control" name="matkhaumoi" required />
-            </div>
-            <div class="mb-3">
-              <label for="nhaplaimatkhau" class="form-label">Nhập lại mật khẩu</label>
-              <input type="password" class="form-control" name="nhaplaimatkhau" required />
-            </div>
-            <button type="submit" name="verify_code" class="btn btn-warning w-100">Xác thực & Cập nhật</button>
-          </form>
-          <?php endif; ?>
         </div>
-        <div class="card-footer text-center">
-          <small>Quay về <a href="dangnhap.php">Đăng nhập</a></small>
-        </div>
-      </div>
     </div>
-  </div>
-</div>
 
+    <?php include('footer.php'); ?>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

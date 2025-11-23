@@ -15,8 +15,9 @@ if (isset($_POST['add_staff'])) {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
     $fullname = trim($_POST['fullname']);
+    $sdt = trim($_POST['sdt']);
     $role = $_POST['role'];
-    if ($admin->add_staff($username, $password, $fullname, $role)) {
+    if ($admin->add_staff($username, $password, $fullname, $sdt, $role)) {
         $message = "Thêm nhân viên thành công!";
     } else {
         $message = "Thêm nhân viên thất bại (trùng username?)";
@@ -62,6 +63,7 @@ $staffs = $admin->get_all_staff();
         <input type="text" name="username" placeholder="Tên đăng nhập" required>
         <input type="password" name="password" placeholder="Mật khẩu" required>
         <input type="text" name="fullname" placeholder="Họ tên" required>
+        <input type="text" name="sdt" placeholder="Số điện thoại" required>
         <select name="role">
             <option value="nhanvien">Nhân viên</option>
             <option value="admin">Admin</option>

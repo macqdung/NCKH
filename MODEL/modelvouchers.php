@@ -6,7 +6,7 @@ class data_vouchers
     public function select_all_vouchers()
     {
         global $conn;
-$sql = "SELECT * FROM vouchers WHERE (expiry_date IS NULL OR expiry_date = '0000-00-00' OR expiry_date >= CURDATE()) AND (max_uses = 0 OR max_uses IS NULL OR uses_count < max_uses) ORDER BY created_at DESC";
+$sql = "SELECT * FROM vouchers WHERE (expiry_date IS NULL OR expiry_date = '0000-00-00' OR expiry_date >= CURDATE()) AND (max_uses_total = 0 OR max_uses_total IS NULL OR uses_count < max_uses_total) ORDER BY created_at DESC";
         $run = mysqli_query($conn, $sql);
         $data = [];
         while ($row = mysqli_fetch_assoc($run)) {
@@ -46,7 +46,7 @@ $stmt = $conn->prepare("SELECT v.*, uv.claimed_at FROM vouchers v JOIN user_vouc
         $check_claim->close();
 
         // Lấy voucher
-$get_voucher = $conn->prepare("SELECT * FROM vouchers WHERE code = ? AND (expiry_date IS NULL OR expiry_date = '0000-00-00' OR expiry_date >= CURDATE()) AND (max_uses IS NULL OR max_uses = 0 OR uses_count < max_uses)");
+$get_voucher = $conn->prepare("SELECT * FROM vouchers WHERE code = ? AND (expiry_date IS NULL OR expiry_date = '0000-00-00' OR expiry_date >= CURDATE()) AND (max_uses_total IS NULL OR max_uses_total = 0 OR uses_count < max_uses_total)");
 $get_voucher->bind_param("s", $voucher_code);
 $get_voucher->execute();
 $result = $get_voucher->get_result();
@@ -65,7 +65,7 @@ $get_voucher->close();
 
         if ($claim_result) {
             // Tăng uses_count nếu có giới hạn
-            if ($voucher['max_uses'] > 0) {
+            if (isset($voucher['max_uses']) && $voucher['max_uses'] > 0) {
                 $update_uses = $conn->prepare("UPDATE vouchers SET uses_count = uses_count + 1 WHERE id = ?");
                 $update_uses->bind_param("i", $voucher['id']);
                 $update_uses->execute();

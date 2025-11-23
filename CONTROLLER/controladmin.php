@@ -2,8 +2,10 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-include_once('../MODEL/modeladmin.php');
-include_once('../MODEL/modelmh.php');
+include_once('../MODEL/modeladmin.php'); // Model cho các chức năng admin
+include_once('../MODEL/modelmh.php'); // Model cho mua hàng
+include_once('../MODEL/modelmqd1.php'); // Model chứa hàm lấy sản phẩm
+
 $get_data = new data_admin();
 $order_data = new data_muahang();
 
@@ -276,7 +278,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_return_status']
     }
 }
 
-$products = $get_data->get_all_products();
+// Khởi tạo model sản phẩm và lấy danh sách sản phẩm
+$product_data = new data_mqd1();
+$products = $product_data->select_all_sanpham();
 $orders = $order_data->select_all_orders();
 $vouchers = $get_data->get_all_vouchers();
 $promotions = $get_data->get_all_promotions();

@@ -1,0 +1,615 @@
+# Generating a full Rasa dataset (NLU ~5000 examples, Stories ~3000, Domain, Rules, Config, Endpoints, Credentials)
+# Files will be saved to /mnt/data/rasa_full_dataset
+import random, yaml, json
+from pathlib import Path
+
+OUT = Path("/mnt/data/rasa_full_dataset")
+OUT.mkdir(parents=True, exist_ok=True)
+
+# Define templates & slots
+genres = ["manga", "light novel", "kinh dị", "trinh thám", "giả tưởng", "tiểu thuyết", "lãng mạn", "khoa học viễn tưởng", "phiêu lưu", "hồi hộp", "IT", "Finance", "Life skills", "Psychology", "Romance", "Science Fiction"]
+moods = ["vui", "buồn", "thư giãn", "hào hứng", "căng thẳng", "tò mò", "lãng đãng", "nghiêm túc", "happy", "sad", "neutral"]
+levels = ["mới bắt đầu", "trung cấp", "nâng cao", "kinh nghiệm", "beginner", "intermediate", "advanced"]
+
+# Basic intents and templates
+base_templates = {
+    "greet": ["chào", "xin chào", "hello", "hi", "good morning", "good evening", "hey"],
+    "goodbye": ["tạm biệt", "bye", "hẹn gặp lại", "see you", "chào tạm biệt"],
+    "thanks": ["cảm ơn", "thanks", "thank you", "cảm ơn bạn"],
+    "ask_genre": ["Bạn thích thể loại nào?", "Gợi ý thể loại cho tôi", "Tôi muốn đọc thể loại gì", "Bạn có thể giới thiệu thể loại không?"],
+    "provide_genre": [f"Tôi thích {g}" for g in genres] + [f"{g}" for g in genres],
+    "ask_mood": ["Tôi muốn sách theo tâm trạng", "Bạn có sách hợp tâm trạng không?", "Gợi ý theo tâm trạng cho tôi", "Tôi đang buồn, nên đọc gì?" ],
+    "provide_mood": [f"Tôi đang {m}" for m in moods] + moods,
+    "ask_level": ["Tôi mới bắt đầu đọc sách", "Tôi là người mới", "Tôi đã đọc khá nhiều rồi", "Tôi muốn sách cho người mới bắt đầu"],
+    "provide_level": [f"Tôi là {l}" for l in levels] + levels,
+    "book_query": ["Bạn có thể gợi ý vài cuốn sách?", "Hãy đề xuất 3 cuốn sách cho tôi", "Tôi cần đề xuất sách", "Gợi ý sách theo sở thích của tôi"],
+    "smalltalk_weather": ["Hôm nay trời đẹp nhỉ", "Trời mưa quá", "Ngày hôm nay thật tuyệt"],
+    "smalltalk_feeling": ["Tôi buồn", "Tôi vui", "Tôi mệt", "Tôi căng thẳng"],
+    "smalltalk_daily_life": ["Tôi vừa đi làm về", "Hôm nay công việc quá nhiều", "Tôi đang muốn thư giãn"],
+    "smalltalk_food": ["Bạn thích ăn gì?", "Gợi ý món ăn", "Ăn gì ngon?"],
+    "smalltalk_funny": ["Kể chuyện vui đi", "Hãy kể một câu chuyện hài hước"]
+}
+
+# Expand NLU examples to ~5000
+nlu_examples = {intent: list(set(templates)) for intent, templates in base_templates.items()}
+
+# Function to create variations
+def vary_phrase(p):
+    variants = [p]
+    if random.random() < 0.4:
+        variants.append(p + " nhé")
+    if random.random() < 0.2:
+        variants.append("Bạn ơi, " + p)
+    if random.random() < 0.15:
+        variants.append(p + "?")
+    if random.random() < 0.1:
+        variants.append(p.upper())
+    # small replacements
+    if "bạn" in p and random.random() < 0.1:
+        variants.append(p.replace("bạn", "các bạn"))
+    return random.choice(list(dict.fromkeys(variants)))
+
+# Seed more examples
+target_nlu = 5000
+all_intents = list(nlu_examples.keys())
+while sum(len(v) for v in nlu_examples.values()) < target_nlu:
+    intent = random.choice(all_intents)
+    base = random.choice(base_templates[intent])
+    phrase = vary_phrase(base)
+    # sometimes inject entity mentions
+    if intent == "provide_genre" and random.random() < 0.4:
+        g = random.choice(genres)
+        phrase = random.choice([f"Tôi thích {g}", f"{g} nhé", f"Thể loại {g}"])
+    if intent == "provide_mood" and random.random() < 0.3:
+        m = random.choice(moods)
+        phrase = random.choice([f"Tôi đang {m}", m])
+    if intent == "provide_level" and random.random() < 0.3:
+        l = random.choice(levels)
+        phrase = random.choice([f"Tôi là {l}", l])
+    nlu_examples[intent].append(phrase)
+
+# Build nlu.yml structure with limited per-intent duplicates
+nlu_yaml = {"version": "3.1", "nlu": []}
+for intent, phrases in nlu_examples.items():
+    unique = list(dict.fromkeys(phrases))
+    # add simple entity annotations for provide_genre/mood/level
+    if intent in ("provide_genre",):
+        examples_block = []
+        for p in unique[:2000]:
+            # annotate genre if present
+            found = None
+            for g in genres:
+                if g in p.lower():
+                    found = g
+                    break
+            if found:
+                examples_block.append(f"- {p.replace(found, f'[{found}](genre)')}")
+            else:
+                examples_block.append(f"- {p}")
+        nlu_yaml["nlu"].append({"intent": intent, "examples": "\n".join(examples_block)})
+    elif intent in ("provide_mood",):
+        examples_block = []
+        for p in unique[:2000]:
+            found = None
+            for m in moods:
+                if m in p.lower():
+                    found = m
+                    break
+            if found:
+                examples_block.append(f"- {p.replace(found, f'[{found}](mood)')}")
+            else:
+                examples_block.append(f"- {p}")
+        nlu_yaml["nlu"].append({"intent": intent, "examples": "\n".join(examples_block)})
+    elif intent in ("provide_level",):
+        examples_block = []
+        for p in unique[:2000]:
+            found = None
+            for l in levels:
+                if l in p.lower():
+                    found = l
+                    break
+            if found:
+                examples_block.append(f"- {p.replace(found, f'[{found}](level)')}")
+            else:
+                examples_block.append(f"- {p}")
+        nlu_yaml["nlu"].append({"intent": intent, "examples": "\n".join(examples_block)})
+    else:
+        nlu_yaml["nlu"].append({"intent": intent, "examples": "\n".join(f"- {p}" for p in unique[:1000])})
+
+# Save nlu.yml
+nlu_path = OUT / "nlu.yml"
+with nlu_path.open("w", encoding="utf-8") as f:
+    yaml.dump(nlu_yaml, f, allow_unicode=True)
+
+# Generate stories ~3000
+stories = {"version": "3.1", "stories": []}
+story_count = 3000
+for i in range(1, story_count+1):
+    steps = []
+    # optionally greet
+    if random.random() < 0.2:
+        steps.append({"intent": "greet"})
+        if random.random() < 0.6:
+            steps.append({"action": "utter_greet"})
+    # random flow types
+    flow = random.choices(
+        ["probe_genre_then_query", "probe_mood_then_query", "complete_profile_then_query", "direct_query", "smalltalk_then_query"],
+        weights=[25,25,20,20,10], k=1
+    )[0]
+    if flow == "probe_genre_then_query":
+        steps.append({"intent": "ask_genre"})
+        steps.append({"action": "utter_ask_genre"})
+        # user provides
+        steps.append({"intent": "provide_genre"})
+        # bot recommends
+        steps.append({"intent": "book_query"})
+        steps.append({"action": "utter_recommend_books"})
+    elif flow == "probe_mood_then_query":
+        steps.append({"intent": "ask_mood"})
+        steps.append({"action": "utter_ask_mood"})
+        steps.append({"intent": "provide_mood"})
+        steps.append({"intent": "book_query"})
+        steps.append({"action": "utter_recommend_books"})
+    elif flow == "complete_profile_then_query":
+        steps.append({"intent": "provide_genre"})
+        steps.append({"intent": "provide_mood"})
+        steps.append({"intent": "provide_level"})
+        steps.append({"intent": "book_query"})
+        steps.append({"action": "utter_recommend_books"})
+    elif flow == "direct_query":
+        steps.append({"intent": "book_query"})
+        steps.append({"action": "utter_recommend_books"})
+    else:
+        steps.append({"intent": random.choice(["smalltalk_weather","smalltalk_feeling","smalltalk_daily_life"])})
+        steps.append({"action": random.choice(["utter_smalltalk_weather","utter_smalltalk_feeling","utter_smalltalk_daily_life"])})
+        # then user asks for books
+        if random.random() < 0.7:
+            steps.append({"intent": "book_query"})
+            steps.append({"action": "utter_recommend_books"})
+    # sometimes thanks/goodbye
+    if random.random() < 0.2:
+        steps.append({"intent": "thanks"})
+        steps.append({"action": "utter_thanks"})
+    if random.random() < 0.1:
+        steps.append({"intent": "goodbye"})
+        steps.append({"action": "utter_goodbye"})
+    # convert to story block
+    story_block = {"story": f"story_{i}", "steps": []}
+    for s in steps:
+        if "intent" in s:
+            story_block["steps"].append({"intent": s["intent"]})
+        elif "action" in s:
+            story_block["steps"].append({"action": s["action"]})
+    stories["stories"].append(story_block)
+
+stories_path = OUT / "stories.yml"
+with stories_path.open("w", encoding="utf-8") as f:
+    yaml.dump(stories, f, allow_unicode=True)
+
+# Create extended domain (using previous extended template but ensure consistency with intents)
+domain = {
+    "version": "3.1",
+    "intents": list(set(all_intents + ["smalltalk_daily_life","smalltalk_food","smalltalk_funny","smalltalk_school","smalltalk_work","smalltalk_relationship","smalltalk_stress","smalltalk_random"])),
+    "entities": ["genre", "mood", "level"],
+    "slots": {
+        "genre": {"type": "text", "influence_conversation": True},
+        "mood": {"type": "text", "influence_conversation": True},
+        "level": {"type": "text", "influence_conversation": True}
+    },
+    "responses": {
+        "utter_greet": [{"text": "Xin chào! Tôi có thể giúp gì cho bạn hôm nay?"}],
+        "utter_goodbye": [{"text": "Hẹn gặp lại!"}],
+        "utter_thanks": [{"text": "Không có gì!"}],
+        "utter_ask_genre": [{"text": "Bạn thích thể loại sách nào?"}],
+        "utter_ask_mood": [{"text": "Bạn đang có tâm trạng như thế nào hôm nay?"}],
+        "utter_ask_level": [{"text": "Bạn là người mới bắt đầu hay đã có kinh nghiệm đọc sách?"}],
+        "utter_recommend_books": [{"text": "Dưới đây là vài cuốn mình đề xuất dựa trên sở thích của bạn."}],
+        "utter_smalltalk_weather": [{"text": "Thời tiết hôm nay đẹp thật! Đọc sách thì tuyệt luôn."}],
+        "utter_smalltalk_feeling": [{"text": "Bạn kể mình nghe thêm để mình gợi ý sách phù hợp nhé."}],
+        "utter_smalltalk_daily_life": [{"text": "Cuộc sống nhiều điều thú vị. Bạn muốn sách về chủ đề gì?"}],
+        "utter_smalltalk_food": [{"text": "Món đó nghe ngon! Bạn thích đọc sách thể loại nào khi ăn?"}],
+        "utter_smalltalk_funny": [{"text": "Haha, vui ghê!"}],
+        "utter_smalltalk_school": [{"text": "Học hành khó khăn thì sách self-help rất hữu ích."}],
+        "utter_smalltalk_work": [{"text": "Công việc áp lực, thử một vài cuốn quản lý stress nhé."}],
+        "utter_smalltalk_relationship": [{"text": "Những vấn đề tình cảm có thể chữa lành bằng sách tâm lý."}],
+        "utter_smalltalk_stress": [{"text": "Hít thở sâu. Mình sẽ gợi ý sách phù hợp."}],
+        "utter_smalltalk_random": [{"text": "Nghe thú vị đó, kể thêm đi!"}]
+    },
+    "actions": ["utter_ask_genre", "utter_ask_mood", "utter_ask_level", "utter_recommend_books",
+                "utter_greet", "utter_goodbye", "utter_thanks", "utter_smalltalk_weather", "utter_smalltalk_feeling",
+                "utter_smalltalk_daily_life", "utter_smalltalk_food", "utter_smalltalk_funny", "utter_smalltalk_school",
+                "utter_smalltalk_work", "utter_smalltalk_relationship", "utter_smalltalk_stress", "utter_smalltalk_random"]
+}
+
+domain_path = OUT / "domain.yml"
+with domain_path.open("w", encoding="utf-8") as f:
+    yaml.dump(domain, f, allow_unicode=True)
+
+# rules.yml: keep probes and smalltalk rules
+rules = {
+    "version": "3.1",
+    "rules": [
+        {"rule": "ask for genre when missing and user asks for recommendation", "condition": [{"slot": "genre", "type": "not_set"}], "steps": [{"intent": "book_query"}, {"action": "utter_ask_genre"}]},
+        {"rule": "ask for mood when missing and user asks for recommendation", "condition": [{"slot": "mood", "type": "not_set"}], "steps": [{"intent": "book_query"}, {"action": "utter_ask_mood"}]},
+        {"rule": "ask for level when missing and user asks for recommendation", "condition": [{"slot": "level", "type": "not_set"}], "steps": [{"intent": "book_query"}, {"action": "utter_ask_level"}]},
+    ]
+}
+# add smalltalk rules (one per smalltalk intent)
+for st in ["smalltalk_weather","smalltalk_feeling","smalltalk_daily_life","smalltalk_food","smalltalk_funny","smalltalk_school","smalltalk_work","smalltalk_relationship","smalltalk_stress","smalltalk_random"]:
+    rules["rules"].append({"rule": f"smalltalk {st}", "steps": [{"intent": st}, {"action": f"utter_{st}"}]})
+
+rules_path = OUT / "rules.yml"
+with rules_path.open("w", encoding="utf-8") as f:
+    yaml.dump(rules, f, allow_unicode=True)
+
+# config.yml keep recommended pipeline/policies but ensure supports entity recognition
+config = {
+    "version": "3.1",
+    "language": "vi",  # Vietnamese primarily
+    "pipeline": [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "RegexFeaturizer"},
+        {"name": "LexicalSyntacticFeaturizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "CountVectorsFeaturizer", "analyzer": "char_wb", "min_ngram": 1, "max_ngram": 4},
+        {"name": "DIETClassifier", "epochs": 100},
+        {"name": "EntitySynonymMapper"},
+        {"name": "ResponseSelector", "epochs": 100},
+        {"name": "FallbackClassifier", "threshold": 0.3, "ambiguity_threshold": 0.1}
+    ],
+    "policies": [
+        {"name": "MemoizationPolicy"},
+        {"name": "TEDPolicy", "max_history": 5, "epochs": 100},
+        {"name": "RulePolicy"}
+    ]
+}
+config_path = OUT / "config.yml"
+with config_path.open("w", encoding="utf-8") as f:
+    yaml.dump(config, f, allow_unicode=True)
+
+# endpoints and credentials
+endpoints = {"action_endpoint": {"url": "http://localhost:5055/webhook"}}
+endpoints_path = OUT / "endpoints.yml"
+with endpoints_path.open("w", encoding="utf-8") as f:
+    yaml.dump(endpoints, f, allow_unicode=True)
+
+credentials = {"rest": {}}
+creds_path = OUT / "credentials.yml"
+with creds_path.open("w", encoding="utf-8") as f:
+    yaml.dump(credentials, f, allow_unicode=True)
+
+# README
+readme_text = f"""
+Rasa FULL dataset generated here: {OUT}
+
+Files created:
+- nlu.yml (approx {sum(len(v) for v in nlu_examples.values())} examples across intents)
+- stories.yml ({story_count} stories)
+- domain.yml
+- rules.yml
+- config.yml
+- endpoints.yml
+- credentials.yml
+
+How to use:
+1. Copy files into your Rasa project folder (or replace existing nlu/stories/domain/rules files).
+2. Train Rasa: `rasa train`
+3. Run: `rasa shell` or `rasa run actions` (if custom actions are used).
+
+Notes:
+- NLU examples are synthetically generated via templates and small variations.
+- You can increase or tune counts by re-running the generator and changing the target numbers.
+"""
+readme_path = OUT / "README.txt"
+with readme_path.open("w", encoding="utf-8") as f:
+    f.write(readme_text)
+
+# Print results
+generated_files = [str(p) for p in sorted(OUT.iterdir())]
+print("Generated files:")
+for p in generated_files:
+    print(p)
+
+print("\nSummary:")
+print(f"NLU examples total approx = {sum(len(v) for v in nlu_examples.values())}")
+print(f"Stories = {story_count}")
+
+========
+# Regenerating full Rasa dataset (NLU ~5000 examples, Stories ~3000, Domain, Rules, Config, Endpoints, Credentials)
+import random, yaml, json, os
+from pathlib import Path
+
+OUT = Path("/mnt/data/rasa_full_dataset")
+OUT.mkdir(parents=True, exist_ok=True)
+
+# Define templates & slots
+genres = ["manga", "light novel", "kinh dị", "trinh thám", "giả tưởng", "tiểu thuyết", "lãng mạn", "khoa học viễn tưởng", "phiêu lưu", "hồi hộp", "IT", "Finance", "Life skills", "Psychology", "Romance", "Science Fiction"]
+moods = ["vui", "buồn", "thư giãn", "hào hứng", "căng thẳng", "tò mò", "lãng đãng", "nghiêm túc", "happy", "sad", "neutral"]
+levels = ["mới bắt đầu", "trung cấp", "nâng cao", "kinh nghiệm", "beginner", "intermediate", "advanced"]
+
+# Basic intents and templates
+base_templates = {
+    "greet": ["chào", "xin chào", "hello", "hi", "good morning", "good evening", "hey"],
+    "goodbye": ["tạm biệt", "bye", "hẹn gặp lại", "see you", "chào tạm biệt"],
+    "thanks": ["cảm ơn", "thanks", "thank you", "cảm ơn bạn"],
+    "ask_genre": ["Bạn thích thể loại nào?", "Gợi ý thể loại cho tôi", "Tôi muốn đọc thể loại gì", "Bạn có thể giới thiệu thể loại không?"],
+    "provide_genre": [f"Tôi thích {g}" for g in genres] + [f"{g}" for g in genres],
+    "ask_mood": ["Tôi muốn sách theo tâm trạng", "Bạn có sách hợp tâm trạng không?", "Gợi ý theo tâm trạng cho tôi", "Tôi đang buồn, nên đọc gì?" ],
+    "provide_mood": [f"Tôi đang {m}" for m in moods] + moods,
+    "ask_level": ["Tôi mới bắt đầu đọc sách", "Tôi là người mới", "Tôi đã đọc khá nhiều rồi", "Tôi muốn sách cho người mới bắt đầu"],
+    "provide_level": [f"Tôi là {l}" for l in levels] + levels,
+    "book_query": ["Bạn có thể gợi ý vài cuốn sách?", "Hãy đề xuất 3 cuốn sách cho tôi", "Tôi cần đề xuất sách", "Gợi ý sách theo sở thích của tôi"],
+    "smalltalk_weather": ["Hôm nay trời đẹp nhỉ", "Trời mưa quá", "Ngày hôm nay thật tuyệt"],
+    "smalltalk_feeling": ["Tôi buồn", "Tôi vui", "Tôi mệt", "Tôi căng thẳng"],
+    "smalltalk_daily_life": ["Tôi vừa đi làm về", "Hôm nay công việc quá nhiều", "Tôi đang muốn thư giãn"],
+    "smalltalk_food": ["Bạn thích ăn gì?", "Gợi ý món ăn", "Ăn gì ngon?"],
+    "smalltalk_funny": ["Kể chuyện vui đi", "Hãy kể một câu chuyện hài hước"]
+}
+
+# Expand NLU examples to ~5000
+nlu_examples = {intent: list(set(templates)) for intent, templates in base_templates.items()}
+
+# Function to create variations
+def vary_phrase(p):
+    variants = [p]
+    if random.random() < 0.4:
+        variants.append(p + " nhé")
+    if random.random() < 0.2:
+        variants.append("Bạn ơi, " + p)
+    if random.random() < 0.15:
+        variants.append(p + "?")
+    if random.random() < 0.1:
+        variants.append(p.upper())
+    if "bạn" in p and random.random() < 0.1:
+        variants.append(p.replace("bạn", "các bạn"))
+    return random.choice(list(dict.fromkeys(variants)))
+
+# Seed more examples
+target_nlu = 5000
+all_intents = list(nlu_examples.keys())
+while sum(len(v) for v in nlu_examples.values()) < target_nlu:
+    intent = random.choice(all_intents)
+    base = random.choice(base_templates[intent])
+    phrase = vary_phrase(base)
+    if intent == "provide_genre" and random.random() < 0.4:
+        g = random.choice(genres)
+        phrase = random.choice([f"Tôi thích {g}", f"{g} nhé", f"Thể loại {g}"])
+    if intent == "provide_mood" and random.random() < 0.3:
+        m = random.choice(moods)
+        phrase = random.choice([f"Tôi đang {m}", m])
+    if intent == "provide_level" and random.random() < 0.3:
+        l = random.choice(levels)
+        phrase = random.choice([f"Tôi là {l}", l])
+    nlu_examples[intent].append(phrase)
+
+# Build nlu.yml structure with entity annotations for provide_* intents
+nlu_yaml = {"version": "3.1", "nlu": []}
+for intent, phrases in nlu_examples.items():
+    unique = list(dict.fromkeys(phrases))
+    if intent in ("provide_genre",):
+        examples_block = []
+        for p in unique[:2000]:
+            found = None
+            for g in genres:
+                if g in p.lower():
+                    found = g
+                    break
+            if found:
+                examples_block.append(f"- {p.replace(found, f'[{found}](genre)')}")
+            else:
+                examples_block.append(f"- {p}")
+        nlu_yaml["nlu"].append({"intent": intent, "examples": "\n".join(examples_block)})
+    elif intent in ("provide_mood",):
+        examples_block = []
+        for p in unique[:2000]:
+            found = None
+            for m in moods:
+                if m in p.lower():
+                    found = m
+                    break
+            if found:
+                examples_block.append(f"- {p.replace(found, f'[{found}](mood)')}")
+            else:
+                examples_block.append(f"- {p}")
+        nlu_yaml["nlu"].append({"intent": intent, "examples": "\n".join(examples_block)})
+    elif intent in ("provide_level",):
+        examples_block = []
+        for p in unique[:2000]:
+            found = None
+            for l in levels:
+                if l in p.lower():
+                    found = l
+                    break
+            if found:
+                examples_block.append(f"- {p.replace(found, f'[{found}](level)')}")
+            else:
+                examples_block.append(f"- {p}")
+        nlu_yaml["nlu"].append({"intent": intent, "examples": "\n".join(examples_block)})
+    else:
+        nlu_yaml["nlu"].append({"intent": intent, "examples": "\n".join(f"- {p}" for p in unique[:1000])})
+
+# Save nlu.yml
+nlu_path = OUT / "nlu.yml"
+with nlu_path.open("w", encoding="utf-8") as f:
+    yaml.dump(nlu_yaml, f, allow_unicode=True)
+
+# Generate stories ~3000
+stories = {"version": "3.1", "stories": []}
+story_count = 3000
+for i in range(1, story_count+1):
+    steps = []
+    if random.random() < 0.2:
+        steps.append({"intent": "greet"})
+        if random.random() < 0.6:
+            steps.append({"action": "utter_greet"})
+    flow = random.choices(
+        ["probe_genre_then_query", "probe_mood_then_query", "complete_profile_then_query", "direct_query", "smalltalk_then_query"],
+        weights=[25,25,20,20,10], k=1
+    )[0]
+    if flow == "probe_genre_then_query":
+        steps.append({"intent": "ask_genre"})
+        steps.append({"action": "utter_ask_genre"})
+        steps.append({"intent": "provide_genre"})
+        steps.append({"intent": "book_query"})
+        steps.append({"action": "utter_recommend_books"})
+    elif flow == "probe_mood_then_query":
+        steps.append({"intent": "ask_mood"})
+        steps.append({"action": "utter_ask_mood"})
+        steps.append({"intent": "provide_mood"})
+        steps.append({"intent": "book_query"})
+        steps.append({"action": "utter_recommend_books"})
+    elif flow == "complete_profile_then_query":
+        steps.append({"intent": "provide_genre"})
+        steps.append({"intent": "provide_mood"})
+        steps.append({"intent": "provide_level"})
+        steps.append({"intent": "book_query"})
+        steps.append({"action": "utter_recommend_books"})
+    elif flow == "direct_query":
+        steps.append({"intent": "book_query"})
+        steps.append({"action": "utter_recommend_books"})
+    else:
+        steps.append({"intent": random.choice(["smalltalk_weather","smalltalk_feeling","smalltalk_daily_life"])})
+        steps.append({"action": random.choice(["utter_smalltalk_weather","utter_smalltalk_feeling","utter_smalltalk_daily_life"])})
+        if random.random() < 0.7:
+            steps.append({"intent": "book_query"})
+            steps.append({"action": "utter_recommend_books"})
+    if random.random() < 0.2:
+        steps.append({"intent": "thanks"})
+        steps.append({"action": "utter_thanks"})
+    if random.random() < 0.1:
+        steps.append({"intent": "goodbye"})
+        steps.append({"action": "utter_goodbye"})
+    story_block = {"story": f"story_{i}", "steps": []}
+    for s in steps:
+        if "intent" in s:
+            story_block["steps"].append({"intent": s["intent"]})
+        elif "action" in s:
+            story_block["steps"].append({"action": s["action"]})
+    stories["stories"].append(story_block)
+
+stories_path = OUT / "stories.yml"
+with stories_path.open("w", encoding="utf-8") as f:
+    yaml.dump(stories, f, allow_unicode=True)
+
+# Create extended domain
+domain = {
+    "version": "3.1",
+    "intents": list(set(all_intents + ["smalltalk_daily_life","smalltalk_food","smalltalk_funny","smalltalk_school","smalltalk_work","smalltalk_relationship","smalltalk_stress","smalltalk_random"])),
+    "entities": ["genre", "mood", "level"],
+    "slots": {
+        "genre": {"type": "text", "influence_conversation": True},
+        "mood": {"type": "text", "influence_conversation": True},
+        "level": {"type": "text", "influence_conversation": True}
+    },
+    "responses": {
+        "utter_greet": [{"text": "Xin chào! Tôi có thể giúp gì cho bạn hôm nay?"}],
+        "utter_goodbye": [{"text": "Hẹn gặp lại!"}],
+        "utter_thanks": [{"text": "Không có gì!"}],
+        "utter_ask_genre": [{"text": "Bạn thích thể loại sách nào?"}],
+        "utter_ask_mood": [{"text": "Bạn đang có tâm trạng như thế nào hôm nay?"}],
+        "utter_ask_level": [{"text": "Bạn là người mới bắt đầu hay đã có kinh nghiệm đọc sách?"}],
+        "utter_recommend_books": [{"text": "Dưới đây là vài cuốn mình đề xuất dựa trên sở thích của bạn."}],
+        "utter_smalltalk_weather": [{"text": "Thời tiết hôm nay đẹp thật! Đọc sách thì tuyệt luôn."}],
+        "utter_smalltalk_feeling": [{"text": "Bạn kể mình nghe thêm để mình gợi ý sách phù hợp nhé."}],
+        "utter_smalltalk_daily_life": [{"text": "Cuộc sống nhiều điều thú vị. Bạn muốn sách về chủ đề gì?"}],
+        "utter_smalltalk_food": [{"text": "Món đó nghe ngon! Bạn thích đọc sách thể loại nào khi ăn?"}],
+        "utter_smalltalk_funny": [{"text": "Haha, vui ghê!"}],
+        "utter_smalltalk_school": [{"text": "Học hành khó khăn thì sách self-help rất hữu ích."}],
+        "utter_smalltalk_work": [{"text": "Công việc áp lực, thử một vài cuốn quản lý stress nhé."}],
+        "utter_smalltalk_relationship": [{"text": "Những vấn đề tình cảm có thể chữa lành bằng sách tâm lý."}],
+        "utter_smalltalk_stress": [{"text": "Hít thở sâu. Mình sẽ gợi ý sách phù hợp."}],
+        "utter_smalltalk_random": [{"text": "Nghe thú vị đó, kể thêm đi!"}]
+    },
+    "actions": ["utter_ask_genre", "utter_ask_mood", "utter_ask_level", "utter_recommend_books",
+                "utter_greet", "utter_goodbye", "utter_thanks", "utter_smalltalk_weather", "utter_smalltalk_feeling",
+                "utter_smalltalk_daily_life", "utter_smalltalk_food", "utter_smalltalk_funny", "utter_smalltalk_school",
+                "utter_smalltalk_work", "utter_smalltalk_relationship", "utter_smalltalk_stress", "utter_smalltalk_random"]
+}
+
+domain_path = OUT / "domain.yml"
+with domain_path.open("w", encoding="utf-8") as f:
+    yaml.dump(domain, f, allow_unicode=True)
+
+# rules.yml
+rules = {
+    "version": "3.1",
+    "rules": [
+        {"rule": "ask for genre when missing and user asks for recommendation", "condition": [{"slot": "genre", "type": "not_set"}], "steps": [{"intent": "book_query"}, {"action": "utter_ask_genre"}]},
+        {"rule": "ask for mood when missing and user asks for recommendation", "condition": [{"slot": "mood", "type": "not_set"}], "steps": [{"intent": "book_query"}, {"action": "utter_ask_mood"}]},
+        {"rule": "ask for level when missing and user asks for recommendation", "condition": [{"slot": "level", "type": "not_set"}], "steps": [{"intent": "book_query"}, {"action": "utter_ask_level"}]},
+    ]
+}
+for st in ["smalltalk_weather","smalltalk_feeling","smalltalk_daily_life","smalltalk_food","smalltalk_funny","smalltalk_school","smalltalk_work","smalltalk_relationship","smalltalk_stress","smalltalk_random"]:
+    rules["rules"].append({"rule": f"smalltalk {st}", "steps": [{"intent": st}, {"action": f"utter_{st}"}]})
+
+rules_path = OUT / "rules.yml"
+with rules_path.open("w", encoding="utf-8") as f:
+    yaml.dump(rules, f, allow_unicode=True)
+
+# config.yml
+config = {
+    "version": "3.1",
+    "language": "vi",
+    "pipeline": [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "RegexFeaturizer"},
+        {"name": "LexicalSyntacticFeaturizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "CountVectorsFeaturizer", "analyzer": "char_wb", "min_ngram": 1, "max_ngram": 4},
+        {"name": "DIETClassifier", "epochs": 100},
+        {"name": "EntitySynonymMapper"},
+        {"name": "ResponseSelector", "epochs": 100},
+        {"name": "FallbackClassifier", "threshold": 0.3, "ambiguity_threshold": 0.1}
+    ],
+    "policies": [
+        {"name": "MemoizationPolicy"},
+        {"name": "TEDPolicy", "max_history": 5, "epochs": 100},
+        {"name": "RulePolicy"}
+    ]
+}
+config_path = OUT / "config.yml"
+with config_path.open("w", encoding="utf-8") as f:
+    yaml.dump(config, f, allow_unicode=True)
+
+# endpoints.yml and credentials.yml
+endpoints = {"action_endpoint": {"url": "http://localhost:5055/webhook"}}
+with (OUT / "endpoints.yml").open("w", encoding="utf-8") as f:
+    yaml.dump(endpoints, f, allow_unicode=True)
+with (OUT / "credentials.yml").open("w", encoding="utf-8") as f:
+    yaml.dump({"rest": {}}, f, allow_unicode=True)
+
+# README
+readme_text = f"""
+Rasa FULL dataset generated here: {OUT}
+
+Files created:
+- nlu.yml (approx {sum(len(v) for v in nlu_examples.values())} examples across intents)
+- stories.yml ({story_count} stories)
+- domain.yml
+- rules.yml
+- config.yml
+- endpoints.yml
+- credentials.yml
+
+How to use:
+1. Copy files into your Rasa project folder (or replace existing nlu/stories/domain/rules files).
+2. Train Rasa: `rasa train`
+3. Run: `rasa shell` or `rasa run actions` (if custom actions are used).
+
+Notes:
+- NLU examples are synthetically generated via templates and small variations.
+- You can increase or tune counts by re-running the generator and changing the target numbers.
+"""
+with (OUT / "README.txt").open("w", encoding="utf-8") as f:
+    f.write(readme_text)
+
+# Print result files
+generated_files = [str(p) for p in sorted(OUT.iterdir())]
+print("Generated files:")
+for p in generated_files:
+    print(p)
+
+print("\nSummary:")
+print(f"NLU examples total approx = {sum(len(v) for v in nlu_examples.values())}")
+print(f"Stories = {story_count}")
+

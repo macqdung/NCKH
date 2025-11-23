@@ -22,7 +22,7 @@ if (isset($_POST['datmua'])) {
 
                 $insert = $get_data->insert_muahang($id_user, $id_sanpham, $solanmua, $soluong, $dongia, $tongtien, $trangthai, null, $voucher_id);
     if (is_array($insert) && $insert['success']) {
-        $discount_msg = $insert['discount'] > 0 ? " (Giảm giá: " . number_format($insert['discount'], 0, ',', '.') . " VND)" : "";
+        $discount_msg = $insert['discount'] > 0 ? " (Giảm giá: " . number_format($insert['discount'], 0, ',', '.') . " 円)" : "";
         header("Location: /SANPHAMMOI/VIEW/lichsumuahang.php?message=Đã đặt hàng thành công và đang chờ xác nhận!" . $discount_msg);
         exit;
     } elseif (is_array($insert) && !$insert['success']) {

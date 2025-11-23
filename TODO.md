@@ -1,0 +1,5 @@
+- [ ] Replace the disabled message in VIEW/dangky.php with the actual registration form
+- [ ] Ensure the form posts to ../CONTROLLER/controldangky.php
+- [ ] Include form fields: tendangnhap, matkhau, nhapmatkhau, sdt, email
+- [ ] Add password strength indicator and confirmation validation using existing JS
+- [ ] Test the registration functionality

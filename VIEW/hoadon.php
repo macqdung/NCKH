@@ -65,8 +65,8 @@ $review = $review_data->getReviewByProductAndUser($product_id, $username);
                 <td><img src="../media/<?= htmlspecialchars($order['hinhanh']) ?>" class="product-img" alt="<?= htmlspecialchars($order['tensanpham']) ?>"></td>
                 <td><?= htmlspecialchars($order['tensanpham']) ?></td>
                 <td><?= htmlspecialchars($order['soluong']) ?></td>
-                <td><?= number_format($order['dongia'], 0, ',', '.') ?> VND</td>
-                <td><?= number_format($order['tongtien'], 0, ',', '.') ?> VND</td>
+                <td><?= number_format($order['dongia'], 0, ',', '.') ?> 円</td>
+                <td><?= number_format($order['tongtien'], 0, ',', '.') ?> 円</td>
             </tr>
         </tbody>
     </table>
