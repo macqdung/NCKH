@@ -1,0 +1,89 @@
+version: "3.1"
+intents:
+- greet
+- goodbye
+- thanks
+- ask_genre
+- provide_genre
+- ask_mood
+- provide_mood
+- ask_level
+- provide_level
+- book_query
+- smalltalk_weather
+- smalltalk_feeling
+- smalltalk_daily_life
+- smalltalk_food
+- smalltalk_funny
+- smalltalk_school
+- smalltalk_work
+- smalltalk_relationship
+- smalltalk_stress
+- smalltalk_random
+entities:
+- genre
+- mood
+- level
+slots:
+  genre:
+    type: text
+    influence_conversation: true
+  mood:
+    type: text
+    influence_conversation: true
+  level:
+    type: text
+    influence_conversation: true
+responses:
+  utter_greet:
+  - text: "Xin chào! Tôi có thể giúp gì cho bạn hôm nay?"
+  utter_goodbye:
+  - text: "Hẹn gặp lại!"
+  utter_thanks:
+  - text: "Không có gì!"
+  utter_ask_genre:
+  - text: "Bạn thích thể loại sách nào?"
+  utter_ask_mood:
+  - text: "Bạn đang có tâm trạng như thế nào hôm nay?"
+  utter_ask_level:
+  - text: "Bạn là người mới bắt đầu hay đã có kinh nghiệm đọc sách?"
+  utter_recommend_books:
+  - text: "Dưới đây là vài cuốn mình đề xuất dựa trên sở thích của bạn."
+  utter_smalltalk_weather:
+  - text: "Thời tiết hôm nay đẹp thật! Đọc sách thì tuyệt luôn."
+  utter_smalltalk_feeling:
+  - text: "Bạn kể mình nghe thêm để mình gợi ý sách phù hợp nhé."
+  utter_smalltalk_daily_life:
+  - text: "Cuộc sống nhiều điều thú vị. Bạn muốn sách về chủ đề gì?"
+  utter_smalltalk_food:
+  - text: "Món đó nghe ngon! Bạn thích đọc sách thể loại nào khi ăn?"
+  utter_smalltalk_funny:
+  - text: "Haha, vui ghê!"
+  utter_smalltalk_school:
+  - text: "Học hành khó khăn thì sách self-help rất hữu ích."
+  utter_smalltalk_work:
+  - text: "Công việc áp lực, thử một vài cuốn quản lý stress nhé."
+  utter_smalltalk_relationship:
+  - text: "Những vấn đề tình cảm có thể chữa lành bằng sách tâm lý."
+  utter_smalltalk_stress:
+  - text: "Hít thở sâu. Mình sẽ gợi ý sách phù hợp."
+  utter_smalltalk_random:
+  - text: "Nghe thú vị đó, kể thêm đi!"
+actions:
+- utter_ask_genre
+- utter_ask_mood
+- utter_ask_level
+- utter_recommend_books
+- utter_greet
+- utter_goodbye
+- utter_thanks
+- utter_smalltalk_weather
+- utter_smalltalk_feeling
+- utter_smalltalk_daily_life
+- utter_smalltalk_food
+- utter_smalltalk_funny
+- utter_smalltalk_school
+- utter_smalltalk_work
+- utter_smalltalk_relationship
+- utter_smalltalk_stress
+- utter_smalltalk_random

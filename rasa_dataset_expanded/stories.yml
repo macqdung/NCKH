@@ -1,0 +1,43 @@
+version: "3.1"
+stories:
+- story: story_1
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: ask_genre
+  - action: utter_ask_genre
+  - intent: provide_genre
+  - intent: book_query
+  - action: utter_recommend_books
+- story: story_2
+  steps:
+  - intent: ask_mood
+  - action: utter_ask_mood
+  - intent: provide_mood
+  - intent: book_query
+  - action: utter_recommend_books
+- story: story_3
+  steps:
+  - intent: provide_genre
+  - intent: provide_mood
+  - intent: provide_level
+  - intent: book_query
+  - action: utter_recommend_books
+- story: story_4
+  steps:
+  - intent: book_query
+  - action: utter_recommend_books
+- story: story_5
+  steps:
+  - intent: smalltalk_weather
+  - action: utter_smalltalk_weather
+  - intent: book_query
+  - action: utter_recommend_books
+- story: story_6
+  steps:
+  - intent: thanks
+  - action: utter_thanks
+- story: story_7
+  steps:
+  - intent: goodbye
+  - action: utter_goodbye
