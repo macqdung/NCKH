@@ -19,7 +19,7 @@ class data_category
         global $conn;
         $category_id = intval($category_id);
         // Modify query to fetch products where the category or subcategory matches the category_id
-        $sql = "SELECT * FROM products WHERE category = $category_id OR subcategory_id = $category_id LIMIT 10";
+        $sql = "SELECT * FROM products WHERE category = $category_id OR subcategory_id = $category_id GROUP BY tensanpham LIMIT 10";
         $run = mysqli_query($conn, $sql);
         $data = [];
         while ($row = mysqli_fetch_assoc($run)) {

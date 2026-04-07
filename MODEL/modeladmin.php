@@ -438,7 +438,7 @@ class data_admin
     public function get_total_revenue()
     {
         global $conn;
-        $sql = "SELECT SUM(tongtien) as total FROM muahangg WHERE trangthai = 'đã giao hàng thành công'";
+        $sql = "SELECT SUM(tongtien) as total FROM orders WHERE trangthai = 'đã giao hàng thành công'";
         $result = mysqli_query($conn, $sql);
         $row = mysqli_fetch_assoc($result);
         return $row['total'] ?? 0;
@@ -447,7 +447,7 @@ class data_admin
     public function get_products_sold()
     {
         global $conn;
-        $sql = "SELECT SUM(soluong) as total_sold FROM muahangg WHERE trangthai = 'đã giao hàng thành công'";
+        $sql = "SELECT SUM(oi.soluong) as total_sold FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.trangthai = 'đã giao hàng thành công'";
         $result = mysqli_query($conn, $sql);
         $row = mysqli_fetch_assoc($result);
         return $row['total_sold'] ?? 0;
@@ -459,7 +459,7 @@ class data_admin
         $stats = [];
         $statuses = ['chờ xác nhận', 'đang vận chuyển', 'đã giao hàng thành công', 'đã hủy'];
         foreach ($statuses as $status) {
-            $sql = "SELECT COUNT(*) as count FROM muahangg WHERE trangthai = '$status'";
+            $sql = "SELECT COUNT(*) as count FROM orders WHERE trangthai = '$status'";
             $result = mysqli_query($conn, $sql);
             $row = mysqli_fetch_assoc($result);
             $stats[$status] = $row['count'];
@@ -510,7 +510,7 @@ class data_admin
         global $conn;
         $sql = "SELECT r.*, m.tongtien as order_total, u.tendangnhap, p.tensanpham 
                 FROM returns r 
-                JOIN muahangg m ON r.order_id = m.ID 
+                JOIN orders m ON r.order_id = m.id 
                 JOIN users u ON r.user_id = u.ID_user 
                 JOIN products p ON r.product_id = p.ID_sanpham 
                 ORDER BY r.request_date DESC";
@@ -699,11 +699,12 @@ class data_admin
     public function select_all_orders()
     {
         global $conn;
-        $sql = "SELECT m.ID, u.tendangnhap, p.tensanpham, m.soluong, m.tongtien, m.trangthai
-                FROM muahangg m
-                LEFT JOIN users u ON m.id_user = u.ID_user
-                LEFT JOIN products p ON m.id_sanpham = p.ID_sanpham
-                ORDER BY m.ID DESC";
+        $sql = "SELECT o.id as ID, u.tendangnhap, p.tensanpham, oi.soluong, o.tongtien, o.trangthai
+                FROM orders o
+                LEFT JOIN users u ON o.id_user = u.ID_user
+                LEFT JOIN order_items oi ON o.id = oi.order_id
+                LEFT JOIN products p ON oi.ID_sanpham = p.ID_sanpham
+                ORDER BY o.id DESC";
         $result = mysqli_query($conn, $sql);
         $orders = [];
         while ($row = mysqli_fetch_assoc($result)) {
@@ -716,7 +717,10 @@ class data_admin
     public function update_order_status($order_id, $status)
     {
         global $conn;
-        $stmt = $conn->prepare("UPDATE muahangg SET trangthai=? WHERE ID=?");
+        $stmt = $conn->prepare("UPDATE orders SET trangthai=? WHERE id=?");
+        if ($stmt === false) {
+            return false;
+        }
         $stmt->bind_param("si", $status, $order_id);
         $result = $stmt->execute();
         $stmt->close();

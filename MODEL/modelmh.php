@@ -16,7 +16,7 @@ class data_muahang
     }
 
     // Thêm đơn mua hàng mới và cập nhật số lượng sản phẩm
-    public function insert_muahang($id_user, $id_sanpham, $solanmua, $soluong, $dongia, $tongtien, $trangthai, $voucher_code = null, $voucher_id = null)
+    public function insert_muahang($id_user, $id_sanpham, $solanmua, $soluong, $dongia, $tongtien, $trangthai, $payment_method = 'COD', $voucher_id = null)
     {
         global $conn;
         include_once('modeladmin.php');
@@ -68,14 +68,29 @@ class data_muahang
             }
         }
 
-        // Insert order
-        $stmt = $conn->prepare("INSERT INTO muahangg (ID_user, ID_sanpham, solanmua, soluong, dongia, tongtien, trangthai, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-        $stmt->bind_param("iiidids", $id_user, $id_sanpham, $solanmua, $soluong, $discounted_dongia, $tongtien, $trangthai);
+        // 1. Insert into orders table
+        // Schema: id, id_user, tongtien, trangthai, payment_method, payment_status, created_at
+        $payment_status = ($payment_method == 'COD') ? 'pending' : 'chua thanh toan';
+        
+        $stmt = $conn->prepare("INSERT INTO orders (id_user, tongtien, trangthai, payment_method, payment_status, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+        if (!$stmt) {
+            return ['success' => false, 'message' => 'Lỗi chuẩn bị câu lệnh (orders): ' . $conn->error];
+        }
+        $stmt->bind_param("idsss", $id_user, $tongtien, $trangthai, $payment_method, $payment_status);
         $insert_result = $stmt->execute();
-        $order_id = $conn->insert_id;
+        $order_id = $stmt->insert_id;
         $stmt->close();
 
         if ($insert_result) {
+            // 2. Insert into order_items table
+            // Schema: id, order_id, ID_sanpham, soluong, dongia
+            $stmt_item = $conn->prepare("INSERT INTO order_items (order_id, ID_sanpham, soluong, dongia) VALUES (?, ?, ?, ?)");
+            if ($stmt_item) {
+                $stmt_item->bind_param("iiid", $order_id, $id_sanpham, $soluong, $discounted_dongia);
+                $stmt_item->execute();
+                $stmt_item->close();
+            }
+
             // Update stock
             $update_stock = $conn->prepare("UPDATE products SET soluong = soluong - ? WHERE ID_sanpham = ?");
             $update_stock->bind_param("ii", $soluong, $id_sanpham);
@@ -110,27 +125,28 @@ class data_muahang
         }
 
         // Lấy thông tin đơn hàng để khôi phục số lượng
-        $stmt = $conn->prepare("SELECT ID_sanpham, soluong FROM muahangg WHERE ID = ? AND trangthai = 'chờ xác nhận'");
+        // Join order_items để lấy sản phẩm
+        $stmt = $conn->prepare("SELECT oi.ID_sanpham, oi.soluong FROM orders o JOIN order_items oi ON o.id = oi.order_id WHERE o.id = ? AND o.trangthai = 'chờ xác nhận'");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
-        if ($row = $result->fetch_assoc()) {
+        
+        // Cập nhật trạng thái đơn hàng thành 'đã hủy'
+        $update_stmt = $conn->prepare("UPDATE orders SET trangthai = 'đã hủy' WHERE id = ?");
+        $update_stmt->bind_param("i", $id);
+        $update_success = $update_stmt->execute();
+        $update_stmt->close();
+
+        if ($update_success) {
+            while ($row = $result->fetch_assoc()) {
             $id_sanpham = $row['ID_sanpham'];
             $soluong = $row['soluong'];
-
-            // Cập nhật trạng thái đơn hàng thành 'đã hủy'
-            $update_stmt = $conn->prepare("UPDATE muahangg SET trangthai = 'đã hủy' WHERE ID = ?");
-            $update_stmt->bind_param("i", $id);
-            $update_success = $update_stmt->execute();
-            $update_stmt->close();
-
-            if ($update_success) {
                 // Khôi phục số lượng sản phẩm
                 $restore_sql = "UPDATE products SET soluong = soluong + $soluong WHERE ID_sanpham = $id_sanpham";
-                $restore_run = mysqli_query($conn, $restore_sql);
-                $stmt->close();
-                return $restore_run;
+                mysqli_query($conn, $restore_sql);
             }
+            $stmt->close();
+            return true;
         }
         $stmt->close();
         return false;
@@ -138,28 +154,44 @@ class data_muahang
 
     // Lấy lịch sử mua hàng theo ID_user
     public function select_muahang_by_user($id_user)
-    {
-        global $conn;
-        if (!is_numeric($id_user)) {
-            return [];
-        }
-        $stmt = $conn->prepare("SELECT m.*, m.ID as id, p.tensanpham, p.hinhanh FROM muahangg m JOIN products p ON m.ID_sanpham = p.ID_sanpham WHERE m.ID_user = ? ORDER BY m.ID DESC");
-        $stmt->bind_param("i", $id_user);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $data = [];
-        while ($row = $result->fetch_assoc()) {
-            $data[] = $row;
-        }
-        $stmt->close();
-        return $data;
+{
+    global $conn;
+
+    if (!is_numeric($id_user)) {
+        return [];
     }
+
+    $sql = "SELECT o.*, o.id as id, oi.ID_sanpham, oi.soluong, oi.dongia, p.tensanpham, p.hinhanh 
+            FROM orders o 
+            JOIN order_items oi ON o.id = oi.order_id
+            JOIN products p ON oi.ID_sanpham = p.ID_sanpham 
+            WHERE o.id_user = ? 
+            ORDER BY o.id DESC";
+
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        die("Prepare failed: " . $conn->error);
+    }
+
+    $stmt->bind_param("i", $id_user);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    $stmt->close();
+    return $data;
+}
 
     // Lấy tất cả đơn hàng cho admin
     public function select_all_orders()
     {
         global $conn;
-        $sql = "SELECT m.*, u.tendangnhap, p.tensanpham FROM muahangg m JOIN users u ON m.ID_user = u.ID_user JOIN products p ON m.ID_sanpham = p.ID_sanpham ORDER BY m.ID DESC";
+        $sql = "SELECT o.*, u.tendangnhap FROM orders o JOIN users u ON o.id_user = u.ID_user ORDER BY o.id DESC";
         $run = mysqli_query($conn, $sql);
         $data = [];
         while ($row = mysqli_fetch_assoc($run)) {
@@ -180,11 +212,11 @@ class data_muahang
         }
         if ($new_status === 'đã giao hàng thành công') {
             // Cập nhật trạng thái và thời gian giao hàng thành công
-            $stmt = $conn->prepare("UPDATE muahangg SET trangthai = ?, delivered_at = NOW() WHERE ID = ?");
+            $stmt = $conn->prepare("UPDATE orders SET trangthai = ?, delivered_at = NOW() WHERE id = ?");
             $stmt->bind_param("si", $new_status, $id);
         } else {
             // Chỉ cập nhật trạng thái
-            $stmt = $conn->prepare("UPDATE muahangg SET trangthai = ? WHERE ID = ?");
+            $stmt = $conn->prepare("UPDATE orders SET trangthai = ? WHERE id = ?");
             $stmt->bind_param("si", $new_status, $id);
         }
         $result = $stmt->execute();
@@ -194,7 +226,7 @@ class data_muahang
         if ($result && $new_status === 'đã giao hàng thành công') {
             $order = $this->select_order_by_id($id);
             if ($order) {
-                $user_id = $order['ID_user'];
+                $user_id = $order['id_user'];
                 $tongtien = $order['tongtien'];
                 $rules = $admin_model->get_loyalty_rules();
                 if (!empty($rules)) {
@@ -219,7 +251,11 @@ class data_muahang
         if (!is_numeric($order_id)) {
             return null;
         }
-        $stmt = $conn->prepare("SELECT m.*, m.ID as id, p.tensanpham, p.hinhanh FROM muahangg m JOIN products p ON m.ID_sanpham = p.ID_sanpham WHERE m.ID = ?");
+        $stmt = $conn->prepare("SELECT o.*, o.id as id, oi.ID_sanpham, oi.soluong, oi.dongia, p.tensanpham, p.hinhanh 
+                                FROM orders o 
+                                JOIN order_items oi ON o.id = oi.order_id 
+                                JOIN products p ON oi.ID_sanpham = p.ID_sanpham 
+                                WHERE o.id = ?");
         $stmt->bind_param("i", $order_id);
         $stmt->execute();
         $result = $stmt->get_result();

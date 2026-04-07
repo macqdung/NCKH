@@ -16,7 +16,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'user': 'root', 
     'password': '',
-    'db': 'nckhh', # <--- CẦN THAY THẾ TÊN DB
+    'db': 'nckhh', # <--- Đã sửa lại đúng tên DB
     'charset': 'utf8mb4',
     'cursorclass': pymysql.cursors.DictCursor
 }

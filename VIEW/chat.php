@@ -111,7 +111,7 @@ session_start();
       msgDiv.classList.add('chat-message', sender);
       const msgText = document.createElement('span');
       msgText.classList.add('message-text');
-      msgText.textContent = text;
+      msgText.innerHTML = text;
       msgDiv.appendChild(msgText);
       chatMessages.appendChild(msgDiv);
       chatMessages.scrollTop = chatMessages.scrollHeight;

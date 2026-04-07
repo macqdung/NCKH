@@ -50,3 +50,34 @@
     </div>
   </div>
 </footer>
+
+<!-- Nút Chat AI Floating -->
+<a href="chat.php" class="floating-chat-btn" title="Chat với AI">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png" width="30" height="30" alt="Chat" />
+</a>
+
+<style>
+  .floating-chat-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background-color: #dc3545; /* Màu đỏ đồng nhất với theme */
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 9999;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .floating-chat-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+  }
+  .floating-chat-btn img {
+    filter: brightness(0) invert(1);
+  }
+</style>

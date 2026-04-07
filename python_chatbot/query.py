@@ -5,7 +5,7 @@ import pymysql
 import json
 
 class BookQuery:
-    def __init__(self, host='localhost', user='root', password='', db='nckh'):
+    def __init__(self, host='localhost', user='root', password='', db='nckhh'):
         try:
             self.conn = pymysql.connect(host=host, user=user, password=password, db=db, charset='utf8mb4')
         except Exception as e:
@@ -18,7 +18,7 @@ class BookQuery:
             return []
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                sql = "SELECT tensanpham, author, mota, dongia, category FROM products WHERE 1=1"
+                sql = "SELECT ID_sanpham, tensanpham, author, mota, dongia, category FROM products WHERE 1=1"
                 params = []
 
                 if genre:
