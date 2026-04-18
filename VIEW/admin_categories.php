@@ -47,6 +47,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             $message = 'サブカテゴリの削除に失敗しました。';
         }
+    } elseif (isset($_POST['delete_category'])) {
+        $id = $_POST['category_id'];
+        if ($admin->delete_category($id)) {
+            $message = 'カテゴリが削除されました。';
+        } else {
+            $message = 'カテゴリの削除に失敗しました。';
+        }
     }
 }
 
@@ -133,8 +140,19 @@ foreach ($categories as $category) {
                             </div>
                             <div class="card-body">
                                 <?php foreach ($categories as $category): ?>
-                                    <div class="mb-4">
-                                        <h6><?php echo htmlspecialchars($category['name']); ?></h6>
+                                    <div class="category-item mb-4 border p-3 rounded bg-white shadow-sm">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="mb-0 fw-bold text-dark">
+                                                <i class="fas fa-folder-open text-warning me-2"></i>
+                                                <?php echo htmlspecialchars($category['name']); ?>
+                                            </h5>
+                                            <form method="POST" onsubmit="return confirm('警告: このカテゴリ và tất cả các danh mục con của nó sẽ bị xóa?')">
+                                                <input type="hidden" name="category_id" value="<?php echo $category['id']; ?>">
+                                                <button type="submit" name="delete_category" class="btn btn-danger btn-sm">
+                                                    <i class="fas fa-trash"></i> Xóa danh mục này
+                                                </button>
+                                            </form>
+                                        </div>
                                         <ul class="list-group">
                                             <?php if (isset($subcategories[$category['id']]) && count($subcategories[$category['id']]) > 0): ?>
                                                 <?php foreach ($subcategories[$category['id']] as $subcategory): ?>

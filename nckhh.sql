@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 03, 2026 at 10:27 AM
+-- Generation Time: Apr 18, 2026 at 07:17 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -52,40 +52,12 @@ CREATE TABLE `categories` (
 --
 
 INSERT INTO `categories` (`id`, `name`) VALUES
-(5, 'Fantasy'),
-(7, 'History'),
-(46, 'Khoa học'),
-(47, 'Khoa học viễn tưởng'),
-(45, 'Kinh tế'),
-(42, 'Lịch sử'),
-(41, 'Light Novel'),
-(39, 'Manga'),
-(44, 'Phát triển bản thân'),
-(6, 'Romance'),
-(4, 'Science Fiction'),
-(9, 'Self-help'),
-(8, 'Technology'),
-(43, 'Triết học'),
-(40, 'Văn học Nhật Bản'),
-(1, 'マンガ'),
-(3, '外囲国本'),
-(5, 'Fantasy'),
-(7, 'History'),
-(46, 'Khoa học'),
-(47, 'Khoa học viễn tưởng'),
-(45, 'Kinh tế'),
-(42, 'Lịch sử'),
-(41, 'Light Novel'),
-(39, 'Manga'),
-(44, 'Phát triển bản thân'),
-(6, 'Romance'),
-(4, 'Science Fiction'),
-(9, 'Self-help'),
-(8, 'Technology'),
-(43, 'Triết học'),
-(40, 'Văn học Nhật Bản'),
-(1, 'マンガ'),
-(3, '外囲国本');
+(1, '日本語'),
+(2, '通信'),
+(3, 'コンピュータネットワーク'),
+(4, 'テクノロジー'),
+(5, '絵本'),
+(6, '漫画');
 
 -- --------------------------------------------------------
 
@@ -162,17 +134,6 @@ CREATE TABLE `order_items` (
   `thanhtien` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `order_items`
---
-
-INSERT INTO `order_items` (`id`, `order_id`, `ID_sanpham`, `soluong`, `dongia`, `thanhtien`) VALUES
-(1, 1, 7, 1, 160000.00, 0.00),
-(2, 2, 39, 1, 1.00, 0.00),
-(3, 3, 39, 1, 1.00, 0.00),
-(4, 4, 8, 1, 130000.00, 0.00),
-(5, 5, 7, 1, 160000.00, 0.00);
-
 -- --------------------------------------------------------
 
 --
@@ -200,44 +161,15 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`ID_sanpham`, `tensanpham`, `tensanpham_jp`, `mota`, `hinhanh`, `soluong`, `dongia`, `category`, `author`, `author_jp`, `publisher`, `isbn`, `subcategory_id`) VALUES
-(2, '日本語言葉本', NULL, '', 'z7251046443434_e4a82774a218a675072d172b631bb198.jpg', 100, 50.00, '3', 'チャミ　シュアンテュ', NULL, 'ダン　チ', '978-4-06-517592-２', NULL),
-(3, 'Dune', NULL, 'Epic science fiction novel set in desert planet Arrakis.', 'z7251046443384_c110f9acbcf884c006e99cadcbfe2843.jpg', 10, 150000.00, '1', 'Frank Herbert', NULL, 'Chilton Books', '9780441172719', NULL),
-(4, 'The Hobbit', NULL, 'A fantasy tale of Bilbo Baggins\' adventure.', 'z7251046443433_521199ceec5d671060cc8159e423a375.jpg', 15, 120000.00, '2', 'J.R.R. Tolkien', NULL, 'George Allen & Unwin', '9780547928227', NULL),
-(5, 'Pride and Prejudice', NULL, 'Classic romance novel by Jane Austen.', 'z7251046443434_e4a82774a218a675072d172b631bb198.jpg', 20, 90000.00, '3', 'Jane Austen', NULL, 'T. Egerton', '9781503290563', NULL),
-(6, 'Sapiens', NULL, 'A brief history of humankind.', 'z7251046443439_680c29803627be0ccd10ac0bc2bb9794.jpg', 12, 180000.00, '4', 'Yuval Noah Harari', NULL, 'Harper', '9780062316097', NULL),
-(7, 'Clean Code', NULL, 'A Handbook of Agile Software Craftsmanship.', 'z7251046443440_fd145a3e1a0c6002f053f5ab225e2b71.jpg', 3, 160000.00, '5', 'Robert C. Martin', NULL, 'Prentice Hall', '9780132350884', NULL),
-(8, 'The Power of Habit', NULL, 'Why we do what we do in life and business.', 'z7251046443445_56f0ae53e14219c767b5d94d3afa3502.jpg', 13, 130000.00, '6', 'Charles Duhigg', NULL, 'Random House', '9780812981605', NULL),
-(9, 'Thanh Gươm Diệt Quỷ', '鬼滅の刃', 'Hành trình của Tanjiro Kamado để trở thành một kiếm sĩ diệt quỷ sau khi gia đình bị tàn sát và em gái Nezuko bị biến thành quỷ.', 'kimetsu-no-yaiba.jpg', 150, 35000.00, 'Manga', 'Gotouge Koyoharu', '吾峠 呼世晴', NULL, NULL, NULL),
-(10, 'Chú Thuật Hồi Chiến', '呪術廻戦', 'Yuji Itadori, một học sinh trung học, tham gia vào một tổ chức bí mật của các Chú thuật sư để tiêu diệt một lời nguyền hùng mạnh.', 'jujutsu-kaisen.jpg', 120, 35000.00, 'Manga', 'Akutami Gege', '芥見下々', NULL, NULL, NULL),
-(11, 'Spy x Family', 'SPY×FAMILY', 'Một điệp viên phải \"xây dựng một gia đình\" để thực hiện nhiệm vụ, không biết rằng đứa con gái anh nhận nuôi là một nhà ngoại cảm và người vợ là một sát thủ.', 'spy-family.jpg', 200, 40000.00, 'Manga', 'Endo Tatsuya', '遠藤 達哉', NULL, NULL, NULL),
-(12, 'One Piece - Đảo Hải Tặc', 'ワンピース', 'Cuộc phiêu lưu của Monkey D. Luffy và băng hải tặc Mũ Rơm trên hành trình tìm kiếm kho báu huyền thoại \"One Piece\".', 'one-piece.jpg', 300, 25000.00, 'Manga', 'Oda Eiichiro', '尾田 栄一郎', NULL, NULL, NULL),
-(13, 'Doraemon', 'ドラえもん', 'Chú mèo máy đến từ tương lai để giúp đỡ cậu bé Nobita hậu đậu. Một tác phẩm kinh điển cho mọi lứa tuổi.', 'doraemon.jpg', 500, 22000.00, 'Manga', 'Fujiko F. Fujio', '藤子・F・不二雄', NULL, NULL, NULL),
-(14, 'Naruto', 'NARUTO -ナルト-', 'Naruto Uzumaki, một ninja trẻ mồ côi, tìm kiếm sự công nhận và ước mơ trở thành Hokage, người lãnh đạo làng của mình.', 'naruto.jpg', 250, 25000.00, 'Manga', 'Kishimoto Masashi', '岸本 斉史', NULL, NULL, NULL),
-(15, 'Attack on Titan', '進撃の巨人', 'Nhân loại chiến đấu để sinh tồn bên trong những bức tường khổng lồ chống lại các Titan ăn thịt người.', 'attack-on-titan.jpg', 100, 45000.00, 'Manga', 'Isayama Hajime', '諫山 創', NULL, NULL, NULL),
-(16, 'Chainsaw Man', 'チェンソーマン', 'Denji, một chàng trai trẻ mắc nợ, trở thành Thợ Săn Quỷ với trái tim của một con quỷ cưa máy.', 'chainsaw-man.jpg', 90, 40000.00, 'Manga', 'Fujimoto Tatsuki', '藤本 タツキ', NULL, NULL, NULL),
-(17, 'Dáng Hình Thanh Âm', '聲の形', 'Một câu chuyện sâu sắc về sự bắt nạt, hối tiếc và hành trình tìm kiếm sự tha thứ.', 'koe-no-katachi.jpg', 80, 45000.00, 'Manga', 'Ōima Yoshitoki', '大今 良時', NULL, NULL, NULL),
-(18, 'Dragon Ball - 7 Viên Ngọc Rồng', 'ドラゴンボール', 'Son Goku và những người bạn tìm kiếm bảy viên ngọc rồng để triệu hồi một con rồng ban điều ước.', 'dragon-ball.jpg', 400, 25000.00, 'Manga', 'Toriyama Akira', '鳥山 明', NULL, NULL, NULL),
-(19, 'Rừng Na Uy', 'ノルウェイの森', 'Một câu chuyện hoài niệm về tình yêu, sự mất mát và những lựa chọn của tuổi trẻ trong bối cảnh Tokyo những năm 1960.', 'rung-nauy.jpg', 60, 120000.00, 'Văn học Nhật Bản', 'Haruki Murakami', '村上 春樹', NULL, NULL, NULL),
-(20, 'Totto-chan Bên Cửa Sổ', '窓ぎわのトットちゃん', 'Câu chuyện có thật đầy cảm hứng về một cô bé và nền giáo dục đặc biệt đã thay đổi cuộc đời cô.', 'totto-chan.jpg', 80, 95000.00, 'Văn học Nhật Bản', 'Kuroyanagi Tetsuko', '黒柳 徹子', NULL, NULL, NULL),
-(21, 'Your Name', '君の名は。', 'Light novel dựa trên bộ phim hoạt hình nổi tiếng về hai thiếu niên bị hoán đổi cơ thể một cách bí ẩn.', 'your-name.jpg', 70, 110000.00, 'Light Novel', 'Shinkai Makoto', '新海 誠', NULL, NULL, NULL),
-(22, 'Kafka Bên Bờ Biển', '海辺のカフカ', 'Hai câu chuyện song song, một về cậu bé 15 tuổi bỏ nhà đi và một về ông lão có khả năng nói chuyện với mèo.', 'kafka-on-the-shore.jpg', 50, 150000.00, 'Văn học Nhật Bản', 'Haruki Murakami', '村上 春樹', NULL, NULL, NULL),
-(23, 'Thất Lạc Cõi Người', '人間失格', 'Một tác phẩm kinh điển về sự tha hóa, nỗi cô đơn và cuộc đấu tranh của một cá nhân để hòa nhập với xã hội.', 'no-longer-human.jpg', 75, 85000.00, 'Văn học Nhật Bản', 'Dazai Osamu', '太宰 治', NULL, NULL, NULL),
-(24, 'Tớ Muốn Ăn Tụy Của Cậu', '君の膵臓をたべたい', 'Một câu chuyện tình cảm động và bi thương giữa một nam sinh và một nữ sinh mắc bệnh nan y.', 'i-want-to-eat-your-pancreas.jpg', 90, 90000.00, 'Light Novel', 'Sumino Yoru', '住野 よる', NULL, NULL, NULL),
-(25, 'Xứ Sở Ngàn Hạc', '千羽鶴', 'Một tiểu thuyết tinh tế khám phá vẻ đẹp và sự phức tạp của các mối quan hệ con người sau chiến tranh.', 'thousand-cranes.jpg', 40, 98000.00, 'Văn học Nhật Bản', 'Kawabata Yasunari', '川端 康成', NULL, NULL, NULL),
-(26, 'Sử Ký Tư Mã Thiên', '史記', 'Tác phẩm lịch sử kinh điển của Trung Quốc, là nền tảng cho việc nghiên cứu lịch sử Á Đông.', 'su-ky-tu-ma-thien.jpg', 30, 250000.00, 'Lịch sử', 'Tư Mã Thiên', '司馬遷', NULL, NULL, NULL),
-(27, 'Binh Pháp Tôn Tử', '孫子兵法', 'Cuốn sách chiến lược quân sự cổ đại có ảnh hưởng sâu rộng đến tư duy quân sự, kinh doanh và cuộc sống.', 'binh-phap-ton-tu.jpg', 100, 80000.00, 'Triết học', 'Tôn Vũ', '孫武', NULL, NULL, NULL),
-(28, 'Bushido: Tinh Thần Võ Sĩ Đạo', '武士道', 'Khám phá những quy tắc đạo đức và triết lý sống của các samurai, võ sĩ Nhật Bản.', 'bushido.jpg', 50, 95000.00, 'Triết học', 'Nitobe Inazo', '新渡戸 稲造', NULL, NULL, NULL),
-(29, 'Quân Vương', '君主論', 'Một luận thuyết chính trị kinh điển của Machiavelli về cách một nhà lãnh đạo có thể giành và duy trì quyền lực.', 'the-prince.jpg', 60, 88000.00, 'Triết học', 'Niccolò Machiavelli', 'ニッコロ・マキャヴェッリ', NULL, NULL, NULL),
-(30, 'Ikigai: Đi Tìm Lý Do Thức Dậy Mỗi Sáng', '生きがい', 'Khám phá bí quyết sống lâu và hạnh phúc của người Nhật thông qua khái niệm \"Ikigai\".', 'ikigai.jpg', 150, 110000.00, 'Phát triển bản thân', 'Héctor García & Francesc Miralles', 'エクトル・ガルシア', NULL, NULL, NULL),
-(31, 'Đắc Nhân Tâm', '人を動かす', 'Cuốn sách gối đầu giường về nghệ thuật giao tiếp, ứng xử và gây ảnh hưởng đến người khác.', 'dac-nhan-tam.jpg', 200, 90000.00, 'Phát triển bản thân', 'Dale Carnegie', 'デール・カーネギー', NULL, NULL, NULL),
-(32, 'Nghĩ Giàu và Làm Giàu', '思考は現実化する', 'Tác phẩm kinh điển của Napoleon Hill về những nguyên tắc cơ bản để đạt được thành công và sự giàu có.', 'think-and-grow-rich.jpg', 130, 99000.00, 'Kinh tế', 'Napoleon Hill', 'ナポレオン・ヒル', NULL, NULL, NULL),
-(33, 'Cha Giàu Cha Nghèo', '金持ち父さん貧乏父さん', 'Cuốn sách thay đổi tư duy về tiền bạc và tài chính cá nhân, dạy sự khác biệt giữa tài sản và tiêu sản.', 'rich-dad-poor-dad.jpg', 180, 125000.00, 'Kinh tế', 'Robert T. Kiyosaki', 'ロバート・キヨサキ', NULL, NULL, NULL),
-(34, 'Dọn Nhà Cùng Marie Kondo', '人生がときめく片づけの魔法', 'Phương pháp dọn dẹp \"KonMari\" giúp bạn không chỉ sắp xếp nhà cửa mà còn cả cuộc sống.', 'marie-kondo.jpg', 90, 130000.00, 'Phát triển bản thân', 'Marie Kondo', '近藤 麻理恵', NULL, NULL, NULL),
-(35, 'Lược Sử Thời Gian', 'ホーキング、宇宙を語る', 'Stephen Hawking giải thích các khái niệm phức tạp về vũ trụ học, từ Big Bang đến lỗ đen, một cách dễ hiểu.', 'luoc-su-thoi-gian.jpg', 40, 135000.00, 'Khoa học', 'Stephen Hawking', 'スティーヴン・ホーキング', NULL, NULL, NULL),
-(36, 'Cosmos', 'コスモス', 'Một chuyến du hành vĩ đại qua không gian và thời gian cùng nhà thiên văn học Carl Sagan.', 'cosmos.jpg', 35, 180000.00, 'Khoa học', 'Carl Sagan', 'カール・セーガン', NULL, NULL, NULL),
-(37, 'Sapiens: Lược Sử Loài Người', 'サピエンス全史', 'Khám phá lịch sử của loài người từ thời kỳ đồ đá cho đến cuộc cách mạng chính trị và công nghệ.', 'sapiens.jpg', 70, 195000.00, 'Khoa học', 'Yuval Noah Harari', 'ユヴァル・ノア・ハラリ', NULL, NULL, NULL),
-(38, '20.000 Dặm Dưới Biển', '海底二万里', 'Cuộc phiêu lưu kinh điển của Jules Verne trên con tàu ngầm Nautilus huyền thoại.', '20000-leagues.jpg', 65, 85000.00, 'Khoa học viễn tưởng', 'Jules Verne', 'ジュール・ヴェルヌ', NULL, NULL, NULL),
-(39, 'MQD', NULL, '', 'chichi.jpeg', 0, 1.00, '7', 'Minh', NULL, '524100VN', '001', NULL);
+(43, 'にほんごのほん Beginner', NULL, '初心者向けの日本語学習書です。豊富なイラストとともに、日常的なコミュニケーション場面を楽しく学べます。', '51S1hDktSNL._AC_UF1000,1000_QL80_.jpg', 1000, 250000.00, '1', '町田 三代子', NULL, '凡人社', '9784893589132', NULL),
+(44, '情報通信ネットワーク入門', NULL, 'ネットワークの構造、通信プロトコル、情報システムの接続技術に関する基礎的な教科書です。', '433902936X.jpg', 1000, 319999.97, '4', '尾崎博一', NULL, 'コロナ社', '433902936X', NULL),
+(45, '平成26年版 情報通信白書', NULL, '2014年当時の世界規模でのパラダイムシフトとICTの影響についての調査資料。', '0017237568LL.jpg', 1000, 150000.00, '4', '総務省', NULL, 'ぎょうせい', '9784324098325', NULL),
+(46, 'みんなの日本語 初級 I 第2版 本冊', NULL, '世界中で使われている日本語学習のスタンダード。確かな文法力と会話力が身につきます。', '9784883196036.webp', 1000, 450000.00, '1', 'スリーエーネットワーク', NULL, 'スリーエーネットワーク', '9784883196036', NULL),
+(47, 'そらのほんやさん', NULL, '雲の上にある不思議な本屋さんを営む猫たちの心温まる絵本です。', '9784652205983.jpg', 1000, 350000.00, '5', 'くまくら珠美', NULL, '理論社', '9784652205983', NULL),
+(48, '神さまだけど、今日からメイドはじめます。', NULL, '借金返済のためにドジっ子メイドとして働くことになった神様を描いたファンタジーコメディ。', 'thumbnail.jpg', 1000, 120000.00, '6', 'ゆいち・円伎堂', NULL, 'MIXI', '(Web manga/Digital)', 4),
+(50, 'まんがの達人 Vol.89まんがの達人 Vol.89', NULL, '初級から上級まで、ひと目でわかるまんがの描き方講習。絵の描き方、必要道具、カラーインクの使い方などプロのテクニックを学べます。', 'images (2).jpg', 0, 150000.00, '6', 'マンガの達人編集部', NULL, 'アシェット・コレクションズ・ジャパン', '21831827381', 3),
+(51, 'ドラえもん 第10巻', NULL, '22世紀からやってきたネコ型ロボット・ドラえもんと、勉強も運動も苦手な小学生・野比のび太の日常を描いたSFファンタジー。', 'doraemon.jpg', 1000, 24999.98, '6', '藤子・F・不二雄', NULL, '小学館', '9784091400109', 2),
+(52, '名探偵コナン 第28巻', NULL, '謎の組織によって少年の姿にされた高校生探偵・工藤新一が、江戸川コナンとして数々の難事件を解決していく推理漫画。第28巻では「人魚の伝説」にまつわる事件などを収録。', 'conan.jpg', 0, 24999.98, '6', '青山 剛昌', NULL, '小学館', '9784091261618', 1);
 
 -- --------------------------------------------------------
 
@@ -288,6 +220,16 @@ CREATE TABLE `subcategories` (
   `name` varchar(255) NOT NULL,
   `parent_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `subcategories`
+--
+
+INSERT INTO `subcategories` (`id`, `name`, `parent_id`) VALUES
+(1, '推理', 6),
+(2, '児童向け漫画', 6),
+(3, '描き方', 6),
+(4, 'ファンタジー', 6);
 
 -- --------------------------------------------------------
 
@@ -388,6 +330,12 @@ CREATE TABLE `voucher_usage` (
 ALTER TABLE `book_chapters`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `unique_chapter` (`book_id`,`chapter_number`);
+
+--
+-- Indexes for table `categories`
+--
+ALTER TABLE `categories`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `danhgia`
@@ -495,6 +443,12 @@ ALTER TABLE `book_chapters`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `categories`
+--
+ALTER TABLE `categories`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT for table `danhgia`
 --
 ALTER TABLE `danhgia`
@@ -522,7 +476,7 @@ ALTER TABLE `order_items`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `ID_sanpham` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `ID_sanpham` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
 -- AUTO_INCREMENT for table `promotions`
@@ -540,7 +494,7 @@ ALTER TABLE `returns`
 -- AUTO_INCREMENT for table `subcategories`
 --
 ALTER TABLE `subcategories`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `users`

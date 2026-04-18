@@ -273,6 +273,7 @@ foreach ($categories as $category) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const subcategoriesData = <?php echo json_encode($subcategories); ?>;
+        const booksData = <?php echo json_encode($books); ?>;
 
         function loadSubcategories() {
             const mainCategoryId = document.getElementById('main_category_id').value;
@@ -305,10 +306,24 @@ foreach ($categories as $category) {
         }
 
         function editBook(bookId) {
-            // In a real implementation, you'd fetch book data via AJAX
-            // For now, just open the modal
-            document.getElementById('edit_book_id').value = bookId;
-            new bootstrap.Modal(document.getElementById('editBookModal')).show();
+            const book = booksData.find(b => b.ID_sanpham == bookId);
+            if (book) {
+                document.getElementById('edit_book_id').value = book.ID_sanpham;
+                document.getElementById('edit_title').value = book.tensanpham;
+                document.getElementById('edit_author').value = book.author || '';
+                document.getElementById('edit_publisher').value = book.publisher || '';
+                document.getElementById('edit_isbn').value = book.isbn || '';
+                document.getElementById('edit_price').value = book.dongia;
+                document.getElementById('edit_stock').value = book.soluong;
+                document.getElementById('edit_description').value = book.mota || '';
+                document.getElementById('edit_main_category_id').value = book.category || '';
+                
+                // Load subcategories before setting the value
+                loadEditSubcategories();
+                document.getElementById('edit_subcategory_id').value = book.subcategory_id || '';
+                
+                new bootstrap.Modal(document.getElementById('editBookModal')).show();
+            }
         }
     </script>
 </body>

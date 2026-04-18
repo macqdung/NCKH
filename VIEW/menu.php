@@ -76,4 +76,15 @@
     </div>
   </div>
 </nav>
+<script>
+  // Global handler for missing images
+  document.addEventListener('error', function (event) {
+    if (event.target.tagName.toLowerCase() === 'img') {
+      // Prevent infinite loop if default.jpg itself is missing
+      if (!event.target.src.includes('default.jpg')) {
+        event.target.src = '../media/default.jpg';
+      }
+    }
+  }, true);
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>

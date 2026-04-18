@@ -1,5 +1,5 @@
 <?php
-$conn = mysqli_connect('localhost', 'root', '', 'bookstore');
+$conn = mysqli_connect('localhost', 'root', '', 'nckhh');
 if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }

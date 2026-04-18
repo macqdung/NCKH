@@ -42,9 +42,10 @@ class data_admin
     public function get_all_books()
     {
         global $conn;
+        // Use a subquery to get unique categories to prevent product multiplication if categories table has duplicates
         $sql = "SELECT p.*, c.name as category_name
                 FROM products p
-                LEFT JOIN categories c ON p.category = c.id";
+                LEFT JOIN (SELECT MIN(id) as id, name FROM categories GROUP BY name) c ON p.category = c.id";
         $result = mysqli_query($conn, $sql);
         $books = [];
         while ($row = mysqli_fetch_assoc($result)) {
@@ -66,6 +67,16 @@ class data_admin
     public function add_category($name)
     {
         global $conn;
+        // Check if category already exists
+        $check = $conn->prepare("SELECT id FROM categories WHERE name = ?");
+        $check->bind_param("s", $name);
+        $check->execute();
+        if ($check->get_result()->num_rows > 0) {
+            $check->close();
+            return false; // Duplicate name
+        }
+        $check->close();
+
         $stmt = $conn->prepare("INSERT INTO categories (name) VALUES (?)");
         $stmt->bind_param("s", $name);
         $result = $stmt->execute();
@@ -76,13 +87,43 @@ class data_admin
     public function get_all_categories()
     {
         global $conn;
-        $sql = "SELECT * FROM categories ORDER BY name ASC";
+        // Group by name to ensure even if DB has duplicates, UI only shows one of each category
+        $sql = "SELECT MIN(id) as id, name FROM categories GROUP BY name ORDER BY name ASC";
         $result = mysqli_query($conn, $sql);
         $categories = [];
         while ($row = mysqli_fetch_assoc($result)) {
             $categories[] = $row;
         }
         return $categories;
+    }
+
+    public function delete_category($id)
+    {
+        global $conn;
+        // 1. Delete all subcategories under this main category
+        mysqli_query($conn, "DELETE FROM subcategories WHERE parent_id = $id");
+        
+        // 2. Set product categories to NULL for products in this category
+        // Note: category column is varchar, so we check if it matches the ID
+        mysqli_query($conn, "UPDATE products SET category = NULL WHERE category = '$id'");
+        
+        // 3. Delete the category itself
+        $stmt = $conn->prepare("DELETE FROM categories WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    public function delete_all_categories()
+    {
+        global $conn;
+        mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 0");
+        mysqli_query($conn, "DELETE FROM subcategories");
+        mysqli_query($conn, "UPDATE products SET category = NULL, subcategory_id = NULL");
+        $result = mysqli_query($conn, "DELETE FROM categories");
+        mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 1");
+        return $result;
     }
 
     public function add_subcategory($name, $parent_id)
@@ -158,7 +199,7 @@ class data_admin
     {
         global $conn;
         $stmt = $conn->prepare("UPDATE products SET tensanpham=?, author=?, publisher=?, isbn=?, dongia=?, soluong=?, mota=?, category=?, subcategory_id=? WHERE ID_sanpham=?");
-        $stmt->bind_param("ssssdissi", $title, $author, $publisher, $isbn, $price, $stock, $description, $main_category_id, $subcategory_id, $id);
+        $stmt->bind_param("ssssdissii", $title, $author, $publisher, $isbn, $price, $stock, $description, $main_category_id, $subcategory_id, $id);
         $result = $stmt->execute();
         $stmt->close();
         return $result;
@@ -167,10 +208,28 @@ class data_admin
     public function delete_book($id)
     {
         global $conn;
+        // Handle foreign keys before deletion
+        mysqli_query($conn, "DELETE FROM order_items WHERE ID_sanpham = $id");
+        mysqli_query($conn, "DELETE FROM danhgia WHERE product_id = $id");
+        mysqli_query($conn, "DELETE FROM returns WHERE product_id = $id");
+        
         $stmt = $conn->prepare("DELETE FROM products WHERE ID_sanpham=?");
         $stmt->bind_param("i", $id);
         $result = $stmt->execute();
         $stmt->close();
+        return $result;
+    }
+
+    public function delete_all_books()
+    {
+        global $conn;
+        // Safer to use DELETE with foreign key check disabled if wanting to clear everything
+        mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 0");
+        mysqli_query($conn, "DELETE FROM order_items");
+        mysqli_query($conn, "DELETE FROM danhgia");
+        mysqli_query($conn, "DELETE FROM returns");
+        $result = mysqli_query($conn, "DELETE FROM products");
+        mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 1");
         return $result;
     }
 
@@ -226,6 +285,14 @@ class data_admin
         $stmt->bind_param("i", $id);
         $result = $stmt->execute();
         $stmt->close();
+        return $result;
+    }
+
+    public function delete_all_vouchers()
+    {
+        global $conn;
+        mysqli_query($conn, "DELETE FROM user_vouchers"); // Delete linked records
+        $result = mysqli_query($conn, "DELETE FROM vouchers");
         return $result;
     }
 
@@ -311,6 +378,13 @@ class data_admin
         $stmt->bind_param("i", $id);
         $result = $stmt->execute();
         $stmt->close();
+        return $result;
+    }
+
+    public function delete_all_promotions()
+    {
+        global $conn;
+        $result = mysqli_query($conn, "DELETE FROM promotions");
         return $result;
     }
 
