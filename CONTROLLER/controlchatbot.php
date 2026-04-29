@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 // controlchatbot.php - PHIÊN BẢN HOÀN HẢO 2025
 header('Content-Type: application/json; charset=utf-8');
 header("Access-Control-Allow-Origin: *");
@@ -23,7 +26,10 @@ if ($userMessage === '') {
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, 'http://127.0.0.1:8000/chatbot');
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['message' => $userMessage], JSON_UNESCAPED_UNICODE));
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    'message' => $userMessage,
+    'session_id' => session_id()
+], JSON_UNESCAPED_UNICODE));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json; charset=utf-8']);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_TIMEOUT, 30);

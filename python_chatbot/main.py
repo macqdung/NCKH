@@ -1,9 +1,14 @@
-# main.py - BẢN GEMINI API CHUẨN GEN Z, ĐỌC TÍNH CÁCH VÀ QUERY MYSQL
+import os
+import sys
+
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import uvicorn
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gemini_bot import GeminiBot
+
 
 app = FastAPI()
 
@@ -15,29 +20,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# KEY GEMINI BẠN ĐÃ CUNG CẤP LÊN ĐÂY
-API_KEY = "AIzaSyCbWp8_TDE8MgXBEuC3I_jdknP-KZXif38"
-bot = GeminiBot(api_key=API_KEY)
+bot = GeminiBot()
+
 
 class ChatRequest(BaseModel):
     message: str
-    session_id: str = "default_user" # Dùng chung 1 session cho demo
+    session_id: str = "default_user"
+
 
 @app.get("/")
 def home():
-    return {"status": "OK", "message": "Chatbot Gemini GenZ đang chạy!"}
+    return {"status": "OK", "message": "Book recommendation chatbot is running."}
+
 
 @app.post("/chatbot")
 async def chatbot(req: ChatRequest):
     msg = req.message.strip()
     if not msg:
-        return {"reply": "Chưa gõ gì mà sao gửi được hay vậy bá dơ?"}
+        return {"reply": "Bạn chưa nhập nội dung. Hãy nói mình biết bạn muốn tìm sách gì nhé."}
 
-    # Đưa hết tất cả mọi câu chat cho Gemini xử lý
-    # Gemini sẽ tự trò chuyện, phân tích tính cách, tự call tool Database khi cần!
-    reply = bot.chat(req.session_id, msg)
+    return {"reply": bot.chat(req.session_id, msg)}
 
-    return {"reply": reply}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

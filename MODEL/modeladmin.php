@@ -46,8 +46,12 @@ class data_admin
                 FROM products p
                 LEFT JOIN categories c ON p.category = c.id";
         $result = mysqli_query($conn, $sql);
-        $books = [];
-        while ($row = mysqli_fetch_assoc($result)) {
+        $books = [];        
+        if ($result === false) {
+            error_log("Query error in get_all_products: " . $conn->error);
+            return [];
+        }
+                while ($row = mysqli_fetch_assoc($result)) {
             $books[] = $row;
         }
         return $books;
@@ -79,6 +83,12 @@ class data_admin
         $sql = "SELECT * FROM categories ORDER BY name ASC";
         $result = mysqli_query($conn, $sql);
         $categories = [];
+        
+        if ($result === false) {
+            error_log("Query error in get_all_categories: " . $conn->error);
+            return [];
+        }
+        
         while ($row = mysqli_fetch_assoc($result)) {
             $categories[] = $row;
         }
@@ -191,6 +201,12 @@ class data_admin
         $sql = "SELECT * FROM vouchers ORDER BY created_at DESC";
         $result = mysqli_query($conn, $sql);
         $vouchers = [];
+        
+        if ($result === false) {
+            error_log("Query error in get_all_vouchers: " . $conn->error);
+            return [];
+        }
+        
         while ($row = mysqli_fetch_assoc($result)) {
             $vouchers[] = $row;
         }
@@ -288,6 +304,13 @@ class data_admin
         $sql = "SELECT * FROM promotions ORDER BY created_at DESC";
         $result = mysqli_query($conn, $sql);
         $promotions = [];
+        
+        // Kiểm tra xem query có thành công không
+        if ($result === false) {
+            error_log("Query error in get_all_promotions: " . $conn->error);
+            return [];
+        }
+        
         while ($row = mysqli_fetch_assoc($result)) {
             $promotions[] = $row;
         }
@@ -331,6 +354,12 @@ class data_admin
         $sql = "SELECT * FROM loyalty_rules ORDER BY created_at DESC";
         $result = mysqli_query($conn, $sql);
         $rules = [];
+        
+        if ($result === false) {
+            error_log("Query error in get_loyalty_rules: " . $conn->error);
+            return [];
+        }
+        
         while ($row = mysqli_fetch_assoc($result)) {
             $rules[] = $row;
         }
@@ -428,6 +457,12 @@ class data_admin
                 ORDER BY u.ID_user ASC";
         $result = mysqli_query($conn, $sql);
         $users = [];
+        
+        if ($result === false) {
+            error_log("Query error in get_all_user_loyalty_points: " . $conn->error);
+            return [];
+        }
+        
         while ($row = mysqli_fetch_assoc($result)) {
             $users[] = $row;
         }
@@ -440,6 +475,12 @@ class data_admin
         global $conn;
         $sql = "SELECT SUM(tongtien) as total FROM orders WHERE trangthai = 'đã giao hàng thành công'";
         $result = mysqli_query($conn, $sql);
+        
+        if ($result === false) {
+            error_log("Query error in get_total_revenue: " . $conn->error);
+            return 0;
+        }
+        
         $row = mysqli_fetch_assoc($result);
         return $row['total'] ?? 0;
     }
@@ -449,6 +490,12 @@ class data_admin
         global $conn;
         $sql = "SELECT SUM(oi.soluong) as total_sold FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.trangthai = 'đã giao hàng thành công'";
         $result = mysqli_query($conn, $sql);
+        
+        if ($result === false) {
+            error_log("Query error in get_products_sold: " . $conn->error);
+            return 0;
+        }
+        
         $row = mysqli_fetch_assoc($result);
         return $row['total_sold'] ?? 0;
     }
@@ -516,6 +563,12 @@ class data_admin
                 ORDER BY r.request_date DESC";
         $result = mysqli_query($conn, $sql);
         $returns = [];
+        
+        if ($result === false) {
+            error_log("Query error in get_all_returns: " . $conn->error);
+            return [];
+        }
+        
         while ($row = mysqli_fetch_assoc($result)) {
             $returns[] = $row;
         }
@@ -565,6 +618,13 @@ class data_admin
     {
         global $conn;
         $stmt = $conn->prepare("SELECT v.* FROM vouchers v JOIN user_vouchers uv ON v.id = uv.voucher_id WHERE uv.user_id = ? ORDER BY uv.claimed_at DESC");
+        
+        // Kiểm tra xem prepare có thành công không
+        if ($stmt === false) {
+            error_log("Prepare error: " . $conn->error);
+            return [];
+        }
+        
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -689,6 +749,12 @@ class data_admin
         global $conn;
         $result = mysqli_query($conn, "SELECT ID_user, tendangnhap, role FROM users ORDER BY ID_user ASC");
         $staffs = [];
+        
+        if ($result === false) {
+            error_log("Query error in get_all_staff: " . $conn->error);
+            return [];
+        }
+        
         while ($row = mysqli_fetch_assoc($result)) {
             $staffs[] = $row;
         }
@@ -707,6 +773,12 @@ class data_admin
                 ORDER BY o.id DESC";
         $result = mysqli_query($conn, $sql);
         $orders = [];
+        
+        if ($result === false) {
+            error_log("Query error in select_all_orders: " . $conn->error);
+            return [];
+        }
+        
         while ($row = mysqli_fetch_assoc($result)) {
             $orders[] = $row;
         }
