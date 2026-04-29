@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom">
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom site-navbar sticky-top">
   <div class="container">
     <a class="navbar-brand fw-bold text-dark" href="mqd.php">
       <i class="fas fa-book me-2 text-primary"></i>本屋さん
@@ -86,5 +86,15 @@
       }
     }
   }, true);
+
+  // Scroll effect for sticky navbar
+  window.addEventListener('scroll', function() {
+    const navbar = document.querySelector('.site-navbar');
+    if (window.scrollY > 50) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+  });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
